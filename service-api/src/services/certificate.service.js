@@ -16,7 +16,16 @@ class CertificateService {
     }
 
     static async findById(id) {
-        const certificate = await Certificate.findOne({ where: { id } });
+        const certificate = await Certificate.findOne({ 
+            where: { id },
+            include:[
+                {
+                    model: require('../models/student.model'),
+                    as:'student',
+                    attributes:['id','lastname','firstname']
+                }
+            ] 
+        });
         if (!certificate) throw new Error("Không tìm thấy certificate");
         return certificate;
     }
