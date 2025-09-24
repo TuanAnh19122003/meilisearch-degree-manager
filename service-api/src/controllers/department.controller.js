@@ -18,6 +18,23 @@ class RoleController {
         }
     }
 
+    async findById(req, res) {
+        try {
+            const data = await DepartmentService.findById(req.params.id);
+            res.status(200).json({
+                success: true,
+                message: 'Lấy thông tin khoa thành công',
+                data
+            });
+        } catch (error) {
+            res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy khoa',
+                error: error.message
+            });
+        }
+    }
+
     async create(req, res) {
         try {
             const data = await DepartmentService.create(req.body);

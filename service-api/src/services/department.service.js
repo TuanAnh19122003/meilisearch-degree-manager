@@ -8,6 +8,12 @@ class DepartmentService {
         return data;
     }
 
+    static async findById(id) {
+        const department = await Department.findOne({ where: { id } });
+        if (!department) throw new Error("Không tìm thấy khoa");
+        return department;
+    }
+
     static async create(data) {
         const department = await Department.create(data);
         return department;
