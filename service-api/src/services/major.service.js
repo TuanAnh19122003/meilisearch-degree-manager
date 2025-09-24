@@ -4,15 +4,30 @@ class MajorService {
     static async findAll() {
         const data = await Major.findAll({
             order: [['createdAt', 'ASC']],
-            include:[
+            include: [
                 {
                     model: require('../models/department.model'),
-                    as:'department',
-                    attributes:['id','name']
+                    as: 'department',
+                    attributes: ['id', 'name']
                 }
             ]
         });
         return data;
+    }
+
+    static async findById(id) {
+        const major = await Major.findOne({
+            where: { id },
+            include: [
+                {
+                    model: require('../models/department.model'),
+                    as: 'department',
+                    attributes: ['id', 'name']
+                }
+            ]
+        });
+        if (!major) throw new Error("Không tìm thấy chuyên ngành");
+        return major;
     }
 
     static async create(data) {
