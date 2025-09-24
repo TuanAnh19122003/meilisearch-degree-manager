@@ -40,6 +40,22 @@ class UserController {
         }
     }
 
+    async findById(req, res) {
+        try {
+            const data = await UserService.findById(req.params.id);
+            res.status(200).json({
+                success: true,
+                message: 'Lấy thông tin người dùng thành công',
+                data
+            });
+        } catch (error) {
+            res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy người dùng',
+                error: error.message
+            });
+        }
+    }
 
     async create(req, res) {
         try {
@@ -47,13 +63,13 @@ class UserController {
 
             res.status(200).json({
                 success: true,
-                message: 'Thêm thành công',
+                message: 'Thêm người dùng thành công',
                 data
             })
         } catch (error) {
             res.status(500).json({
                 success: false,
-                message: 'Thêm thất bại',
+                message: 'Thêm người dùng thất bại',
                 error: error.message
             })
         }
@@ -65,14 +81,14 @@ class UserController {
 
             res.status(201).json({
                 success: true,
-                message: 'Cập nhật thành công',
+                message: 'Cập nhật người dùng thành công',
                 data
             })
         } catch (error) {
             console.log('Lỗi: ', error);
             res.status(401).json({
                 success: false,
-                message: "Đã xảy ra lỗi khi cập nhật",
+                message: "Đã xảy ra lỗi khi cập nhật người dùng",
                 error: error.message
             })
         }
@@ -92,12 +108,12 @@ class UserController {
 
             res.status(200).json({
                 success: true,
-                message: 'Xóa thành công'
+                message: 'Xóa người dùng thành công'
             });
         } catch (error) {
             res.status(401).json({
                 success: false,
-                message: "Đã xảy ra lỗi khi xóa",
+                message: "Đã xảy ra lỗi khi xóa người dùng",
                 error: error.message
             });
         }

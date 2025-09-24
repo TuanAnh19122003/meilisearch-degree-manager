@@ -22,6 +22,20 @@ class UserService {
         return users;
     }
 
+    static async findById(id) {
+        const user = await User.findOne({
+            where: { id },
+            include: [
+                {
+                    model: require('../models/role.model'),
+                    as: 'role',
+                    attributes: ['id', 'code', 'name']
+                }
+            ]
+        });
+        if (!user) throw new Error("Không tìm thấy user");
+        return user;
+    }
 
     static async create(data, file) {
         if (data.password) {
