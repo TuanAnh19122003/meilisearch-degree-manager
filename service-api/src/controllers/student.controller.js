@@ -12,7 +12,7 @@ class StudentController {
                 result = await StudentService.findAll();
                 return res.status(200).json({
                     success: true,
-                    message: 'Lấy danh sách thành công',
+                    message: 'Lấy danh sách học sinh thành công',
                     data: result.rows,
                     total: result.count
                 });
@@ -23,7 +23,7 @@ class StudentController {
 
             res.status(200).json({
                 success: true,
-                message: 'Lấy danh sách thành công',
+                message: 'Lấy danh sách sinh viên thành công',
                 data: result.rows,
                 total: result.count,
                 page,
@@ -32,7 +32,24 @@ class StudentController {
         } catch (error) {
             res.status(500).json({
                 success: false,
-                message: 'Đã xảy ra lỗi khi lấy danh sách',
+                message: 'Đã xảy ra lỗi khi lấy danh sách sinh viên',
+                error: error.message
+            });
+        }
+    }
+
+    async findById(req, res) {
+        try {
+            const data = await StudentService.findById(req.params.id);
+            res.status(200).json({
+                success: true,
+                message: 'Lấy thông tin sinh viên thành công',
+                data
+            });
+        } catch (error) {
+            res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy sinh viên',
                 error: error.message
             });
         }
@@ -44,13 +61,13 @@ class StudentController {
 
             res.status(200).json({
                 success: true,
-                message: 'Thêm thành công',
+                message: 'Thêm sinh viên thành công',
                 data
             })
         } catch (error) {
             res.status(500).json({
                 success: false,
-                message: error.message,
+                message: 'Thêm sinh viên thất bại',
             })
         }
     }

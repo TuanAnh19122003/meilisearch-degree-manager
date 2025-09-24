@@ -13,7 +13,7 @@ class StudentService {
                 {
                     model: Major,
                     as: 'major',
-                    attributes: ['name']
+                    attributes: ['id', 'name']
                 }
             ]
         };
@@ -25,6 +25,21 @@ class StudentService {
 
         const data = await Student.findAndCountAll(queryOptions);
         return data;
+    }
+
+    static async findById(id) {
+        const student = await Student.findOne({
+            where: { id },
+            include: [
+                {
+                    model: require('../models/major.model'),
+                    as: 'major',
+                    attributes: ['id', 'name']
+                }
+            ]
+        });
+        if (!student) throw new Error("Không tìm thấy student");
+        return student;
     }
 
     static async create(data, file) {
