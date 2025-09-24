@@ -8,6 +8,12 @@ class CourseService {
         return data;
     }
 
+    static async findById(id) {
+        const course = await Course.findOne({ where: { id } });
+        if (!course) throw new Error("Không tìm thấy môn học");
+        return course;
+    }
+
     static async create(data) {
         const course = await Course.create(data);
         return course;
