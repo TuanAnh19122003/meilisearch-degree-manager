@@ -3,7 +3,14 @@ const Major = require('../models/major.model');
 class MajorService {
     static async findAll() {
         const data = await Major.findAll({
-            order: [['createdAt', 'ASC']]
+            order: [['createdAt', 'ASC']],
+            include:[
+                {
+                    model: require('../models/department.model'),
+                    as:'department',
+                    attributes:['id','name']
+                }
+            ]
         });
         return data;
     }
