@@ -7,6 +7,7 @@ const department = require('./department.routes');
 const course = require('./course.routes');
 const user = require('./user.routes');
 const student = require('./student.routes');
+const grade = require('./grade.routes');
 
 router.use('/roles', role);
 router.use('/majors', major);
@@ -14,5 +15,6 @@ router.use('/departments', department);
 router.use('/courses', course);
 router.use('/users', user);
 router.use('/students', student);
+router.use('/grades', grade);
 
 module.exports = router;
