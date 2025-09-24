@@ -8,6 +8,7 @@ const course = require('./course.routes');
 const user = require('./user.routes');
 const student = require('./student.routes');
 const grade = require('./grade.routes');
+const certificate = require('./certificate.routes');
 
 router.use('/roles', role);
 router.use('/majors', major);
@@ -16,5 +17,6 @@ router.use('/courses', course);
 router.use('/users', user);
 router.use('/students', student);
 router.use('/grades', grade);
+router.use('/certificates', certificate)
 
 module.exports = router;
