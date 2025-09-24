@@ -8,6 +8,12 @@ class RoleService {
         return data;
     }
 
+    static async findById(id) {
+        const role = await Role.findOne({ where: { id } });
+        if (!role) throw new Error("Không tìm thấy vai trò");
+        return role;
+    }
+
     static async create(data) {
         const role = await Role.create(data);
         return role;
