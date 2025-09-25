@@ -1,11 +1,13 @@
 const Log = require('../models/log.model');
+const User = require('../models/user.model');
 
 class LogService {
     static async findAll(options = {}) {
         const { offset, limit } = options;
 
         const queryOptions = {
-            order: [['createdAt', 'DESC']]
+            order: [['createdAt', 'DESC']],
+            include: [{ model: User, as: 'user', attributes: ['id', 'firstname', 'lastname'] }]
         };
 
         if (offset !== undefined && limit !== undefined) {
@@ -13,17 +15,41 @@ class LogService {
             queryOptions.limit = limit;
         }
 
-        const logs = await Log.findAndCountAll({
-            ...queryOptions,
-            include: [
-                {
-                    model: require('../models/user.model'),
-                    as: 'user',
-                    attributes: ['id', 'firstname', 'lastname']
-                }
-            ]
-        });
-        return logs;
+        return await Log.findAndCountAll(queryOptions);
+    }
+
+    static async findByUser(userId, options = {}) {
+        const { offset, limit } = options;
+
+        const queryOptions = {
+            where: { user_id: userId },
+            order: [['createdAt', 'DESC']],
+            include: [{ model: User, as: 'user', attributes: ['id', 'firstname', 'lastname'] }]
+        };
+
+        if (offset !== undefined && limit !== undefined) {
+            queryOptions.offset = offset;
+            queryOptions.limit = limit;
+        }
+
+        return await Log.findAndCountAll(queryOptions);
+    }
+
+    static async findByStudent(studentId, options = {}) {
+        const { offset, limit } = options;
+
+        const queryOptions = {
+            where: { target_id: studentId, target_type: 'student' },
+            order: [['createdAt', 'DESC']],
+            include: [{ model: User, as: 'user', attributes: ['id', 'firstname', 'lastname'] }]
+        };
+
+        if (offset !== undefined && limit !== undefined) {
+            queryOptions.offset = offset;
+            queryOptions.limit = limit;
+        }
+
+        return await Log.findAndCountAll(queryOptions);
     }
 
     static async create({ userId, action, targetId, targetType, ip }) {
@@ -35,7 +61,6 @@ class LogService {
             ip_address: ip
         });
     }
-
 }
 
 module.exports = LogService;
