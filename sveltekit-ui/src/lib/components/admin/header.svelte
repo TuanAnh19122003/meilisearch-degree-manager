@@ -47,21 +47,20 @@
 	<div class="text-xl font-semibold">Hệ thống quản lý văn bằng</div>
 
 	<div class="relative">
-		<!-- svelte-ignore a11y_click_events_have_key_events -->
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div
-			class="flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 transition hover:bg-white/20"
+		<button
+			type="button"
+			class="flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 transition"
 			on:click={toggleDropdown}
 		>
 			{#if $user}
 				<img
 					src={`http://localhost:5000/${$user.image}`}
 					alt="avatar"
-					class="h-9 w-9 rounded-full border-2 border-white"
+					class="h-9 w-9 rounded-full"
 				/>
 				<span>{$user.lastname} {$user.firstname}</span>
 			{/if}
-		</div>
+		</button>
 
 		{#if $dropdownOpen}
 			<div
