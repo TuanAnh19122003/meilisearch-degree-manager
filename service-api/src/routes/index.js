@@ -9,6 +9,7 @@ const user = require('./user.routes');
 const student = require('./student.routes');
 const grade = require('./grade.routes');
 const certificate = require('./certificate.routes');
+const auth = require('./auth.routes');
 
 const studentgpa = require('./studentGpa.routes');
 
@@ -20,6 +21,7 @@ router.use('/users', user);
 router.use('/students', student);
 router.use('/grades', grade);
 router.use('/certificates', certificate);
+router.use('/auth', auth);
 
 router.use('/student-gpa', studentgpa);
 
