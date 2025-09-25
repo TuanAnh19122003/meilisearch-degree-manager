@@ -5,8 +5,10 @@
 
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { Toaster } from 'svelte-sonner';
+
 	let collapsed = false;
-    
+
 	onMount(() => {
 		const token = localStorage.getItem('token');
 		if (!token) {
@@ -28,3 +30,11 @@
 
 	<Footer />
 </div>
+<Toaster
+	position="top-center"
+	richColors
+	toastOptions={{
+		duration: 3000,
+		style: { fontSize: '15px' }
+	}}
+/>

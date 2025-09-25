@@ -1,11 +1,20 @@
 const Role = require('../models/role.model');
 
 class RoleService {
-    static async findAll() {
-        const data = await Role.findAll({
+    static async findAll(options = {}) {
+        const { offset, limit } = options;
+
+        const queryOptions = {
             order: [['createdAt', 'ASC']]
-        });
-        return data;
+        };
+
+        if (offset !== undefined && limit !== undefined) {
+            queryOptions.offset = offset;
+            queryOptions.limit = limit;
+        }
+
+        const roles = await Role.findAndCountAll(queryOptions);
+        return roles;
     }
 
     static async findById(id) {

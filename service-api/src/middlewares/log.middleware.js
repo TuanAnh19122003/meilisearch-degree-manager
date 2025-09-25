@@ -35,27 +35,27 @@ async function logMiddleware(req, res, next) {
     res.on('finish', async () => {
         try {
             const responseData = res.locals.responseBody;
-
-            // data có thể là object hoặc mảng
-            const data = responseData?.data;
             let targetId = null;
 
-            if (data) {
-                if (Array.isArray(data) && data[0]?.id) {
-                    targetId = data[0].id;
-                } else if (data?.id) {
-                    targetId = data.id;
+            if (responseData) {
+                if (Array.isArray(responseData) && responseData[0]?.id) {
+                    targetId = responseData[0].id;
+                } else if (responseData?.id) {
+                    targetId = responseData.id;
+                } else if (responseData?.data?.id) {
+                    targetId = responseData.data.id;
                 }
             }
 
-            // targetType từ URL (/api/roles → roles → role)
             const urlParts = req.originalUrl.split('/').filter(Boolean);
-            let targetType = urlParts[1] || null;
+            let targetType = urlParts[urlParts.length - 1];
+            if (!isNaN(targetType)) {
+                targetType = urlParts[urlParts.length - 2];
+            }
             if (targetType) {
                 targetType = targetType.replace(/s$/, '');
             }
 
-            // lấy ip với utils
             const ip = getIp(req);
 
             await LogService.create({
@@ -65,9 +65,8 @@ async function logMiddleware(req, res, next) {
                 targetType,
                 ip
             });
-
         } catch (error) {
-            console.error('Ghi log thất bại:', error.message);
+            console.error('Ghi log thất bại:', error);
         }
     });
 
