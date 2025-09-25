@@ -14,6 +14,7 @@ const log = require('./log.routes');
 const auth = require('./auth.routes');
 
 const studentgpa = require('./studentGpa.routes');
+const gradeExtra = require('./grade.extra.routes');
 
 router.use(logMiddleware);
 router.use('/roles', role);
@@ -28,5 +29,6 @@ router.use('/logs', log);
 router.use('/auth', auth);
 
 router.use('/student-gpa', studentgpa);
+router.use('/grades', gradeExtra);
 
 module.exports = router;
