@@ -12,9 +12,9 @@ class AuthService {
             include: {
                 model: require('../models/role.model'),
                 as: 'role',
-                attributes: ['id', 'name']
+                attributes: ['id', 'name', 'code']
             }
-        })
+        });
 
         if (!user) {
             throw new Error('Email hoặc mật khẩu không đúng');
@@ -22,19 +22,32 @@ class AuthService {
         if (!user.is_active) {
             throw new Error('Tài khoản đã bị khóa');
         }
+
         const isMatch = await checkPassword(password, user.password);
         if (!isMatch) {
             throw new Error('Email hoặc mật khẩu không đúng');
         }
 
         const token = jwt.sign(
-            { id: user.id, email: user.email },
+            { id: user.id, email: user.email, role: user.role.code },
             JWT_SECRET,
             { expiresIn: '1h' }
         );
+        
+        const safeUser = {
+            id: user.id,
+            firstname: user.firstname,
+            lastname: user.lastname,
+            email: user.email,
+            image: user.image,
+            phone: user.phone,
+            role: user.role,
+            is_active: user.is_active
+        };
 
-        return { user, token };
+        return { user: safeUser, token };
     }
+
 
     static async register({ firstname, lastname, email, password, image }) {
         const existingUser = await User.findOne({ where: { email } });
@@ -52,6 +65,14 @@ class AuthService {
             roleId: 2,
         });
 
+        return user;
+    }
+
+    static async getMe(userId) {
+        const user = await User.findByPk(userId, {
+            include: { model: require('../models/role.model'), as: 'role', attributes: ['id', 'name', 'code'] }
+        });
+        if (!user) throw new Error('User không tồn tại');
         return user;
     }
 
