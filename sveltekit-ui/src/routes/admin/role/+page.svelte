@@ -8,21 +8,13 @@
 	import { indexRoles } from '$lib/meili';
 	import axios from 'axios';
 
-	type Role = {
-		id: string;
-		name: string;
-		code: string;
-		createdAt: string;
-		updatedAt: string;
-	};
-
-	let roles: Role[] = [];
+	let roles: any[] = [];
 	let pagination = { current: 1, pageSize: 6, total: 0 };
 	let viewMode: 'list' | 'card' = 'list';
 	let search = '';
 	let openForm = false;
-	let editingRole: Role | null = null;
-	let viewingRole: Role | null = null;
+	let editingRole: any = null;
+	let viewingRole: any = null;
 	let loading = false;
 
 	const API_URL = import.meta.env.VITE_API_URL;
@@ -50,7 +42,7 @@
 				// Tìm kiếm Meilisearch
 				const offset = (page - 1) * pageSize;
 				const res = await indexRoles.search(search, { limit: pageSize, offset });
-				roles = res.hits as Role[];
+				roles = res.hits;
 				pagination = {
 					current: page,
 					pageSize,
@@ -81,12 +73,12 @@
 		openForm = true;
 	}
 
-	function handleEdit(role: Role) {
+	function handleEdit(role: any) {
 		editingRole = role;
 		openForm = true;
 	}
 
-	function handleView(role: Role) {
+	function handleView(role: any) {
 		viewingRole = role;
 	}
 
@@ -110,7 +102,7 @@
 		}
 	}
 
-	async function handleSubmit(role: Role) {
+	async function handleSubmit(role: any) {
 		try {
 			let dbResponse;
 			if (editingRole) {
