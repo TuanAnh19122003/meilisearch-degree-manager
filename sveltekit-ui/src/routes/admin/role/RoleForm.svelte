@@ -24,10 +24,10 @@
 </script>
 
 <form class="space-y-4" on:submit|preventDefault={handleSubmit}>
-	<!-- svelte-ignore a11y_label_has_associated_control -->
 	<div>
-		<label class="mb-1 mt-3 block font-medium">Mã vai trò</label>
+		<label for="roleCode" class="mt-3 mb-1 block font-medium">Mã vai trò</label>
 		<input
+			id="roleCode"
 			type="text"
 			bind:value={formData.code}
 			class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -35,8 +35,9 @@
 			required
 		/>
 
-		<label class="mb-1 block font-medium">Tên vai trò</label>
+		<label for="roleName" class="mb-1 block font-medium">Tên vai trò</label>
 		<input
+			id="roleName"
 			type="text"
 			bind:value={formData.name}
 			class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"

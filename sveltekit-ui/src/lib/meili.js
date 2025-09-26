@@ -6,3 +6,4 @@ export const client = new MeiliSearch({
 });
 
 export const indexRoles = client.index('roles');
+export const indexUsers = client.index('users');
