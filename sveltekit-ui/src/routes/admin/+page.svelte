@@ -1,5 +1,7 @@
 <script>
 	// Đây là page test, chưa cần dữ liệu
+	import { pageTitle } from '$lib/stores/pageTitle';
+	pageTitle.set('Dashboard');
 </script>
 
 <div class="p-6">

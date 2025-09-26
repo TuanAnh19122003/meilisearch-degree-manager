@@ -46,8 +46,8 @@
 		dispatch('edit', item);
 		closeMenu();
 	}
-	function handleDelete(item) {
-		dispatch('delete', item);
+	function handleDelete(id) {
+		dispatch('delete', id);
 		closeMenu();
 	}
 
@@ -72,7 +72,7 @@
 		return result;
 	}
 
-	$: cardData = viewMode === 'card' ? data : data; // list mode uses data directly, pagination handled in parent
+	$: cardData = viewMode === 'card' ? data : data;
 </script>
 
 <!-- Switch View Toggle -->
@@ -176,7 +176,7 @@
 		</button>
 		<button
 			class="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-gray-100"
-			on:click={() => handleDelete(currentItem)}
+			on:click={() => handleDelete(currentItem.id)}
 		>
 			<Trash2 class="h-4 w-4" /> Xóa
 		</button>

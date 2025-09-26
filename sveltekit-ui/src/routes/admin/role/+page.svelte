@@ -1,93 +1,140 @@
-<script>
-	import RoleList from './RoleList.svelte';
-	import RoleForm from './RoleForm.svelte';
-	import axios from 'axios';
+<script lang="ts">
 	import { onMount } from 'svelte';
 	import { Plus, Pencil, Eye } from 'lucide-svelte';
+	import { pageTitle } from '$lib/stores/pageTitle';
 	import { toast } from 'svelte-sonner';
+	import RoleList from './RoleList.svelte';
+	import RoleForm from './RoleForm.svelte';
+	import { indexRoles } from '$lib/meili';
+	import axios from 'axios';
 
-	let roles = [];
+	type Role = {
+		id: string;
+		name: string;
+		code: string;
+		createdAt: string;
+		updatedAt: string;
+	};
+
+	let roles: Role[] = [];
 	let pagination = { current: 1, pageSize: 6, total: 0 };
-	let viewMode = 'list';
+	let viewMode: 'list' | 'card' = 'list';
 	let search = '';
 	let openForm = false;
-	let editingRole = null;
-	let viewingRole = null;
+	let editingRole: Role | null = null;
+	let viewingRole: Role | null = null;
 	let loading = false;
 
 	const API_URL = import.meta.env.VITE_API_URL;
+	pageTitle.set('Quản lý vai trò');
+
+	let token = '';
+	onMount(() => {
+		if (typeof localStorage !== 'undefined') {
+			token = localStorage.getItem('token') || '';
+			if (!token) window.location.href = '/auth/login';
+			else fetchRoles();
+		}
+	});
 
 	function getAuthHeader() {
-		const token = localStorage.getItem('token');
 		return token ? { Authorization: `Bearer ${token}` } : {};
 	}
 
-	async function fetchData(page = 1, pageSize = pagination.pageSize) {
+	// FETCH DATA
+	async function fetchRoles(page = 1, pageSize = pagination.pageSize) {
 		loading = true;
 		try {
-			const response = await axios.get(`${API_URL}/roles`, {
-				params: { page, pageSize },
-				headers: getAuthHeader()
-			});
-			const { success, data, total, message } = response.data;
-			if (success) {
-				roles = data;
-				pagination = { current: page, pageSize, total };
-			} else toast.error(message || 'Có lỗi xảy ra');
-		} catch (e) {
-			console.error(e);
-			toast.error('Lỗi khi tải danh sách vai trò!');
+			let response;
+			if (search.trim()) {
+				// Tìm kiếm Meilisearch
+				const offset = (page - 1) * pageSize;
+				const res = await indexRoles.search(search, { limit: pageSize, offset });
+				roles = res.hits as Role[];
+				pagination = {
+					current: page,
+					pageSize,
+					total: res.estimatedTotalHits || res.hits.length
+				};
+			} else {
+				// Lấy danh sách từ DB
+				response = await axios.get(`${API_URL}/roles`, {
+					params: { page, pageSize },
+					headers: getAuthHeader()
+				});
+				const { success, data, total, message } = response.data;
+				if (success) {
+					roles = data;
+					pagination = { current: page, pageSize, total };
+				} else toast.error(message || 'Lỗi tải dữ liệu');
+			}
+		} catch (err) {
+			console.error(err);
+			toast.error('Lỗi khi tải danh sách vai trò');
 		} finally {
 			loading = false;
 		}
 	}
 
-	onMount(() => fetchData());
-
 	function handleAdd() {
 		editingRole = null;
 		openForm = true;
 	}
-	function handleEdit(role) {
+
+	function handleEdit(role: Role) {
 		editingRole = role;
 		openForm = true;
 	}
-	function handleView(role) {
+
+	function handleView(role: Role) {
 		viewingRole = role;
 	}
-	async function handleDelete(id) {
-		try {
-			const response = await axios.delete(`${API_URL}/roles/${id}`, { headers: getAuthHeader() });
-			toast.success(response.data.message || 'Xóa thành công');
 
+	// CRUD thật vào DB + sync Meilisearch
+	async function handleDelete(id: string) {
+		const role = roles.find((r) => r.id === id);
+		const roleName = role?.name || 'vai trò này';
+		const confirmed = window.confirm(`Bạn có chắc chắn muốn xóa vai trò "${roleName}" không?`);
+		if (!confirmed) return;
+
+		try {
+			await axios.delete(`${API_URL}/roles/${id}`, { headers: getAuthHeader() });
+			await indexRoles.deleteDocument(id);
+			toast.success('Xóa thành công');
 			const newPage =
 				roles.length === 1 && pagination.current > 1 ? pagination.current - 1 : pagination.current;
-			await fetchData(newPage, pagination.pageSize);
-		} catch (err) {
-			toast.error(err.response?.data?.message || 'Thao tác thất bại');
-		}
-	}
-	async function handleSubmit(role) {
-		try {
-			let response;
-			if (editingRole) {
-				response = await axios.put(`${API_URL}/roles/${editingRole.id}`, role, {
-					headers: getAuthHeader()
-				});
-			} else {
-				response = await axios.post(`${API_URL}/roles`, role, { headers: getAuthHeader() });
-			}
-			toast.success(response.data.message || 'Thành công');
-			openForm = false;
-			fetchData(1, pagination.pageSize);
+			fetchRoles(newPage, pagination.pageSize);
 		} catch (err) {
 			console.error(err);
-			toast.error(err.response?.data?.message || 'Thao tác thất bại');
+			toast.error('Xóa thất bại');
+		}
+	}
+
+	async function handleSubmit(role: Role) {
+		try {
+			let dbResponse;
+			if (editingRole) {
+				dbResponse = await axios.put(`${API_URL}/roles/${editingRole.id}`, role, {
+					headers: getAuthHeader()
+				});
+				await indexRoles.updateDocuments([{ ...role, id: editingRole.id }]);
+				toast.success('Cập nhật thành công');
+			} else {
+				dbResponse = await axios.post(`${API_URL}/roles`, role, { headers: getAuthHeader() });
+				await indexRoles.addDocuments([{ ...role, id: dbResponse.data.id }]);
+				toast.success('Thêm mới thành công');
+			}
+			openForm = false;
+			fetchRoles(1, pagination.pageSize);
+		} catch (err) {
+			console.error(err);
+			toast.error('Thao tác thất bại');
 		}
 	}
 </script>
 
 <div class="space-y-6">
+	<!-- HEADER -->
 	<div class="flex items-center justify-between">
 		<h2 class="flex items-center gap-2 text-2xl font-semibold">
 			<svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -104,6 +151,7 @@
 			<input
 				placeholder="Tìm kiếm vai trò..."
 				bind:value={search}
+				on:input={() => fetchRoles(1, pagination.pageSize)}
 				class="w-64 rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
 			/>
 			<button
@@ -125,7 +173,7 @@
 			on:edit={(e) => handleEdit(e.detail)}
 			on:view={(e) => handleView(e.detail)}
 			on:delete={(e) => handleDelete(e.detail)}
-			on:pageChange={(e) => fetchData(e.detail, pagination.pageSize)}
+			on:pageChange={(e) => fetchRoles(e.detail, pagination.pageSize)}
 			on:viewModeChange={(e) => (viewMode = e.detail)}
 		/>
 	{/if}
@@ -160,6 +208,7 @@
 				<div class="space-y-2 text-gray-700">
 					<p><strong>ID:</strong> {viewingRole.id}</p>
 					<p><strong>Tên vai trò:</strong> {viewingRole.name}</p>
+					<p><strong>Mã:</strong> {viewingRole.code}</p>
 					<p><strong>Ngày tạo:</strong> {new Date(viewingRole.createdAt).toLocaleString()}</p>
 					<p><strong>Ngày cập nhật:</strong> {new Date(viewingRole.updatedAt).toLocaleString()}</p>
 				</div>
