@@ -3,21 +3,41 @@ const GradeService = require('../services/grade.service');
 class GradeController {
     async findAll(req, res) {
         try {
-            const data = await GradeService.findAll();
+            const page = parseInt(req.query.page);
+            const pageSize = parseInt(req.query.pageSize);
+
+            let result;
+
+            if (!page || !pageSize) {
+                result = await GradeService.findAll();
+                return res.status(200).json({
+                    success: true,
+                    message: 'Lấy danh sách bảng điểm thành công',
+                    data: result.rows,
+                    total: result.count
+                });
+            }
+
+            const offset = (page - 1) * pageSize;
+            result = await GradeService.findAll({ offset, limit: pageSize });
+
             res.status(200).json({
                 success: true,
-                message: 'Lấy danh sách thành công',
-                data
-            })
+                message: 'Lấy danh sách bảng điểm thành công',
+                data: result.rows,
+                total: result.count,
+                page,
+                pageSize
+            });
         } catch (error) {
             res.status(500).json({
                 success: false,
                 message: 'Đã xảy ra lỗi khi lấy danh sách',
                 error: error.message
-            })
+            });
         }
     }
-    
+
     async findById(req, res) {
         try {
             const data = await GradeService.findById(req.params.id);

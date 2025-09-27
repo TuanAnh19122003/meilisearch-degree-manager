@@ -1,9 +1,10 @@
 const Grade = require('../models/grade.model');
 
 class GradeService {
-    static async findAll() {
-        const data = await Grade.findAll({
-            order: [['createdAt', 'ASC']],
+    static async findAll(options = {}) {
+        const { offset, limit } = options;
+
+        const queryOptions = {
             include: [
                 {
                     model: require('../models/student.model'),
@@ -15,9 +16,14 @@ class GradeService {
                     as: 'course',
                     attributes: ['id', 'name']
                 }
-            ]
-        });
-        return data;
+            ],
+            offset,
+            limit,
+            order: [['createdAt', 'ASC']]
+        };
+
+        const grades = await Grade.findAndCountAll(queryOptions);
+        return grades;
     }
 
     static async findById(id) {
