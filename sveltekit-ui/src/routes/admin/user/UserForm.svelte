@@ -3,70 +3,61 @@
 	import { toast } from 'svelte-sonner';
 	import axios from 'axios';
 
-	export let initialValues = {
+	export let initialValues: any = null;
+	const dispatch = createEventDispatcher();
+
+	const API_URL = import.meta.env.VITE_API_URL;
+	let roles: any[] = [];
+	let formData: any = {
 		firstname: '',
 		lastname: '',
 		email: '',
 		password: '',
 		phone: '',
-		roleId: null,
+		roleId: '',
 		is_active: true,
 		image: null
 	};
 
-	const dispatch = createEventDispatcher();
-	let formData = { ...initialValues, imageFile: null, imagePreview: '' };
-	let roles: { id: number; name: string }[] = [];
-
-	const API_URL = import.meta.env.VITE_API_URL;
-	let token = '';
-	if (typeof localStorage !== 'undefined') token = localStorage.getItem('token') || '';
-
 	onMount(async () => {
 		try {
-			const res = await axios.get(`${API_URL}/roles`, {
-				headers: token ? { Authorization: `Bearer ${token}` } : {}
-			});
+			const res = await axios.get(`${API_URL}/roles`);
 			if (res.data.success) roles = res.data.data;
 		} catch (err) {
 			console.error(err);
-			toast.error('Không thể tải danh sách vai trò');
+			toast.error('Không tải được danh sách vai trò');
 		}
 
-		if (formData.image) {
-			formData.imagePreview = `${API_URL}/${formData.image}`;
+		if (initialValues) {
+			formData = {
+				...formData,
+				...initialValues,
+				password: '' // không load mật khẩu cũ
+			};
 		}
 	});
 
-	function handleFileChange(e: Event) {
-		const file = (e.target as HTMLInputElement).files?.[0];
+	function handleFileChange(e) {
+		const file = e.target.files[0];
 		if (file) {
-			formData.imageFile = file;
-			const reader = new FileReader();
-			reader.onload = () => {
-				formData.imagePreview = reader.result as string;
-			};
-			reader.readAsDataURL(file);
+			formData.image = file;
 		}
 	}
 
-	function handleSubmit(e: Event) {
+	function handleSubmit(e) {
 		e.preventDefault();
+
 		if (!formData.firstname || !formData.lastname || !formData.email || !formData.roleId) {
-			toast.error('Vui lòng nhập đầy đủ thông tin bắt buộc!');
+			toast.error('Vui lòng nhập đầy đủ thông tin!');
 			return;
 		}
 
 		const payload = new FormData();
-		payload.append('firstname', formData.firstname);
-		payload.append('lastname', formData.lastname);
-		payload.append('email', formData.email);
-		payload.append('password', formData.password);
-		payload.append('phone', formData.phone);
-		payload.append('roleId', formData.roleId.toString());
-		payload.append('is_active', formData.is_active.toString());
-
-		if (formData.imageFile) payload.append('image', formData.imageFile);
+		for (const key in formData) {
+			if (formData[key] !== null && formData[key] !== undefined && formData[key] !== '') {
+				payload.append(key, formData[key]);
+			}
+		}
 
 		dispatch('submit', payload);
 	}
@@ -79,108 +70,65 @@
 <form class="space-y-4" on:submit|preventDefault={handleSubmit}>
 	<div class="grid grid-cols-2 gap-4">
 		<div>
-			<label for="" class="mb-1 block font-medium">Họ</label>
-			<input
-				type="text"
-				bind:value={formData.firstname}
-				placeholder="Nhập họ"
-				required
-				class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
-			/>
+			<label for="" class="mb-1 block text-sm">Họ</label>
+			<input type="text" bind:value={formData.firstname} class="w-full rounded border px-3 py-2" />
 		</div>
 		<div>
-			<label for="" class="mb-1 block font-medium">Tên</label>
-			<input
-				type="text"
-				bind:value={formData.lastname}
-				placeholder="Nhập tên"
-				required
-				class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
-			/>
+			<label for="" class="mb-1 block text-sm">Tên</label>
+			<input type="text" bind:value={formData.lastname} class="w-full rounded border px-3 py-2" />
 		</div>
 	</div>
 
 	<div>
-		<label for="" class="mb-1 block font-medium">Email</label>
-		<input
-			type="email"
-			bind:value={formData.email}
-			placeholder="Nhập email"
-			required
-			class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
-		/>
+		<label for="" class="mb-1 block text-sm">Email</label>
+		<input type="email" bind:value={formData.email} class="w-full rounded border px-3 py-2" />
+	</div>
+
+	{#if !initialValues}
+		<div>
+			<label for="" class="mb-1 block text-sm">Mật khẩu</label>
+			<input
+				type="password"
+				bind:value={formData.password}
+				class="w-full rounded border px-3 py-2"
+			/>
+		</div>
+	{/if}
+
+	<div>
+		<label for="" class="mb-1 block text-sm">Số điện thoại</label>
+		<input type="text" bind:value={formData.phone} class="w-full rounded border px-3 py-2" />
 	</div>
 
 	<div>
-		<label for="" class="mb-1 block font-medium">Mật khẩu</label>
-		<input
-			type="password"
-			bind:value={formData.password}
-			placeholder="Nhập mật khẩu"
-			class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
-		/>
-	</div>
-
-	<div>
-		<label for="" class="mb-1 block font-medium">Điện thoại</label>
-		<input
-			type="text"
-			bind:value={formData.phone}
-			placeholder="Nhập số điện thoại"
-			class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
-		/>
-	</div>
-
-	<div>
-		<label for="" class="mb-1 block font-medium">Vai trò</label>
-		<select
-			bind:value={formData.roleId}
-			required
-			class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
-		>
-			<option value="" disabled>Chọn vai trò</option>
+		<label for="" class="mb-1 block text-sm">Vai trò</label>
+		<select bind:value={formData.roleId} class="w-full rounded border px-3 py-2">
+			<option value="">-- Chọn vai trò --</option>
 			{#each roles as role}
 				<option value={role.id}>{role.name}</option>
 			{/each}
 		</select>
 	</div>
 
+	<div class="flex items-center gap-2">
+		<input type="checkbox" bind:checked={formData.is_active} />
+		<label for="">Hoạt động</label>
+	</div>
+
 	<div>
-		<label for="" class="mb-1 block font-medium">Ảnh đại diện</label>
-		<input
-			type="file"
-			accept="image/*"
-			on:change={handleFileChange}
-			class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
-		/>
-		{#if formData.imagePreview}
+		<label for="" class="mb-1 block text-sm">Ảnh</label>
+		<input type="file" accept="image/*" on:change={handleFileChange} />
+		{#if initialValues?.image}
 			<img
-				src={formData.imagePreview}
-				alt="Preview"
-				class="mt-2 h-24 w-24 rounded-full object-cover"
+				src={`http://localhost:5000/${initialValues.image}`}
+				alt="preview"
+				class="mt-2 h-16 w-16 rounded-full object-cover"
 			/>
 		{/if}
 	</div>
 
-	<div class="flex items-center gap-4">
-		<label class="inline-flex items-center">
-			<input type="checkbox" bind:checked={formData.is_active} class="mr-2" /> Hoạt động
-		</label>
-	</div>
-
 	<div class="flex justify-end gap-3">
-		<button
-			type="button"
-			class="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300"
-			on:click={handleCancel}
-		>
-			Hủy
-		</button>
-		<button
-			type="submit"
-			class="rounded-lg bg-blue-600 px-4 py-2 text-white shadow hover:bg-blue-700"
-		>
-			Lưu
-		</button>
+		<button type="button" class="rounded bg-gray-200 px-4 py-2" on:click={handleCancel}>Hủy</button>
+		<button type="submit" class="rounded bg-blue-600 px-4 py-2 text-white">Lưu</button>
 	</div>
 </form>

@@ -1,15 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher, onMount } from 'svelte';
-	import {
-		Eye,
-		Pencil,
-		Trash2,
-		MoreVertical,
-		ChevronLeft,
-		ChevronRight,
-		CheckCircle,
-		XCircle
-	} from 'lucide-svelte';
+	import { Eye, Pencil, Trash2, MoreVertical, ChevronLeft, ChevronRight } from 'lucide-svelte';
 
 	export let data = [];
 	export let pagination = { current: 1, pageSize: 6, total: 0 };
@@ -17,9 +8,9 @@
 
 	const dispatch = createEventDispatcher();
 
-	let openMenuId = null;
+	let openMenuId: string | null = null;
 	let menuPos = { top: 0, left: 0 };
-	let currentItem = null;
+	let currentItem: any = null;
 
 	function toggleMenu(item, event) {
 		if (openMenuId === item.id) {
@@ -68,8 +59,9 @@
 	function getPagesToShow(current, total) {
 		const delta = 2;
 		const pages = [];
-		for (let i = 1; i <= total; i++)
+		for (let i = 1; i <= total; i++) {
 			if (i === 1 || i === total || (i >= current - delta && i <= current + delta)) pages.push(i);
+		}
 		const result = [];
 		let last = 0;
 		for (const page of pages) {
@@ -102,44 +94,29 @@
 </div>
 
 {#if viewMode === 'list'}
+	<!-- TABLE VIEW -->
 	<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
 		<table class="w-full border-collapse text-sm">
 			<thead class="bg-gray-50 text-gray-700">
 				<tr>
 					<th class="px-2 py-3 text-left font-medium">STT</th>
-					<th class="px-4 py-3 text-left font-medium">Họ & Tên</th>
+					<th class="px-4 py-3 text-left font-medium">Tên</th>
 					<th class="px-4 py-3 text-left font-medium">Email</th>
 					<th class="px-4 py-3 text-left font-medium">Điện thoại</th>
 					<th class="px-4 py-3 text-left font-medium">Vai trò</th>
-					<th class="px-4 py-3 text-center font-medium">Trạng thái</th>
 					<th class="px-4 py-3 text-center font-medium">Hành động</th>
 				</tr>
 			</thead>
 			<tbody class="divide-y divide-gray-100">
 				{#each data as item, index}
 					<tr class="transition-colors hover:bg-gray-50">
-						<td class="px-4 py-3 text-center text-gray-600"
-							>{(pagination.current - 1) * pagination.pageSize + index + 1}</td
-						>
-						<td class="px-4 py-3">{item.lastname} {item.firstname}</td>
-						<td class="px-4 py-3 font-mono text-blue-600">{item.email}</td>
-						<td class="px-4 py-3">{item.phone}</td>
-						<td class="px-4 py-3">{item.role_name}</td>
-						<td class="px-4 py-3 text-center">
-							{#if item.is_active}
-								<span
-									class="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-800"
-								>
-									<CheckCircle class="h-4 w-4" /> Hoạt động
-								</span>
-							{:else}
-								<span
-									class="inline-flex items-center gap-1 rounded-full bg-red-100 px-3 py-1 text-sm font-semibold text-red-800"
-								>
-									<XCircle class="h-4 w-4" /> Ngưng hoạt động
-								</span>
-							{/if}
+						<td class="px-4 py-3 text-center text-gray-600">
+							{(pagination.current - 1) * pagination.pageSize + index + 1}
 						</td>
+						<td class="px-4 py-3">{item.firstname} {item.lastname}</td>
+						<td class="px-4 py-3">{item.email}</td>
+						<td class="px-4 py-3">{item.phone}</td>
+						<td class="px-4 py-3">{item.role?.name}</td>
 						<td class="px-4 py-3 text-center">
 							<button
 								class="dropdown-trigger rounded-lg p-2 hover:bg-gray-100"
@@ -154,28 +131,21 @@
 		</table>
 	</div>
 {:else}
+	<!-- CARD VIEW -->
 	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 		{#each data as item}
 			<div
 				class="relative flex items-center gap-4 rounded-xl bg-white p-4 shadow-md transition hover:shadow-lg"
 			>
-				<div class="flex h-12 w-12 shrink-0 overflow-hidden rounded-full bg-gray-100">
-					{#if item.image}
-						<img
-							src={`http://localhost:5000/${item.image}`}
-							alt="{item.firstname} {item.lastname}"
-							class="h-full w-full object-cover"
-						/>
-					{:else}
-						<div class="flex h-full w-full items-center justify-center font-bold text-blue-600">
-							{item.firstname?.[0]?.toUpperCase() || '?'}
-						</div>
-					{/if}
-				</div>
+				<img
+					src={`http://localhost:5000/${item.image}` || 'https://via.placeholder.com/64'}
+					alt="Avatar"
+					class="h-16 w-16 rounded-full object-cover"
+				/>
 				<div class="flex-1">
 					<h3 class="text-base font-semibold text-gray-800">{item.firstname} {item.lastname}</h3>
 					<p class="text-sm text-gray-500">{item.email}</p>
-					<p class="text-sm text-gray-500">{item.role_name}</p>
+					<p class="text-sm text-gray-500">{item.role?.name}</p>
 				</div>
 				<div class="absolute top-2 right-2">
 					<button
@@ -190,6 +160,7 @@
 	</div>
 {/if}
 
+<!-- Dropdown menu -->
 {#if openMenuId && currentItem}
 	<div
 		class="fixed z-50 w-32 rounded-lg bg-white shadow-md"
@@ -216,6 +187,7 @@
 	</div>
 {/if}
 
+<!-- Pagination -->
 <div class="mt-6 flex items-center justify-between text-sm">
 	<span class="text-gray-600">Trang {pagination.current} / {totalPages}</span>
 	<div class="flex items-center gap-1">
@@ -231,9 +203,15 @@
 				<span class="px-2 text-gray-400">...</span>
 			{:else}
 				<button
-					class={`rounded-full border px-3 py-1.5 ${pagination.current === page ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300 hover:bg-gray-100'}`}
-					on:click={() => dispatch('pageChange', page)}>{page}</button
+					class={`rounded-full border px-3 py-1.5 ${
+						pagination.current === page
+							? 'border-blue-500 bg-blue-500 text-white'
+							: 'border-gray-300 hover:bg-gray-100'
+					}`}
+					on:click={() => dispatch('pageChange', page)}
 				>
+					{page}
+				</button>
 			{/if}
 		{/each}
 		<button

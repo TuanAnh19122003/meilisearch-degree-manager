@@ -1,19 +1,26 @@
-<script>
+<script lang="ts">
 	import { createEventDispatcher, onMount } from 'svelte';
-	import { Eye, Pencil, Trash2, MoreVertical, ChevronLeft, ChevronRight } from 'lucide-svelte';
+	import {
+		Eye,
+		Pencil,
+		Trash2,
+		MoreVertical,
+		ChevronLeft,
+		ChevronRight,
+		CheckCircle,
+		XCircle
+	} from 'lucide-svelte';
 
 	export let data = [];
 	export let pagination = { current: 1, pageSize: 6, total: 0 };
-	export let viewMode = 'list'; // 'list' | 'card'
+	export let viewMode = 'list';
 
 	const dispatch = createEventDispatcher();
 
-	// Dropdown state
 	let openMenuId = null;
 	let menuPos = { top: 0, left: 0 };
 	let currentItem = null;
 
-	// Toggle dropdown menu
 	function toggleMenu(item, event) {
 		if (openMenuId === item.id) {
 			closeMenu();
@@ -39,7 +46,6 @@
 		return () => document.removeEventListener('click', handleClickOutside);
 	});
 
-	// Action handlers
 	function handleView(item) {
 		dispatch('view', item);
 		closeMenu();
@@ -95,15 +101,15 @@
 	</label>
 </div>
 
-<!-- LIST / CARD -->
 {#if viewMode === 'list'}
+	<!-- TABLE VIEW -->
 	<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
 		<table class="w-full border-collapse text-sm">
 			<thead class="bg-gray-50 text-gray-700">
 				<tr>
 					<th class="px-2 py-3 text-left font-medium">STT</th>
+					<th class="px-4 py-3 text-left font-medium">Tên vai trò</th>
 					<th class="px-4 py-3 text-left font-medium">Mã</th>
-					<th class="px-4 py-3 text-left font-medium">Tên</th>
 					<th class="px-4 py-3 text-center font-medium">Hành động</th>
 				</tr>
 			</thead>
@@ -113,8 +119,8 @@
 						<td class="px-4 py-3 text-center text-gray-600"
 							>{(pagination.current - 1) * pagination.pageSize + index + 1}</td
 						>
-						<td class="px-4 py-3 font-mono text-blue-600">{item.code}</td>
 						<td class="px-4 py-3">{item.name}</td>
+						<td class="px-4 py-3 font-mono text-blue-600">{item.code}</td>
 						<td class="px-4 py-3 text-center">
 							<button
 								class="dropdown-trigger rounded-lg p-2 hover:bg-gray-100"
@@ -129,16 +135,12 @@
 		</table>
 	</div>
 {:else}
+	<!-- CARD VIEW -->
 	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-		{#each data as item, index}
+		{#each data as item}
 			<div
 				class="relative flex items-center gap-4 rounded-xl bg-white p-4 shadow-md transition hover:shadow-lg"
 			>
-				<div
-					class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-600"
-				>
-					{item.name?.[0]?.toUpperCase() || '?'}
-				</div>
 				<div class="flex-1">
 					<h3 class="text-base font-semibold text-gray-800">{item.name}</h3>
 					<p class="text-sm text-gray-500">{item.code}</p>
@@ -156,7 +158,7 @@
 	</div>
 {/if}
 
-<!-- Dropdown Menu -->
+<!-- Dropdown menu -->
 {#if openMenuId && currentItem}
 	<div
 		class="fixed z-50 w-32 rounded-lg bg-white shadow-md"
@@ -194,20 +196,16 @@
 		>
 			<ChevronLeft class="h-4 w-4" />
 		</button>
-
 		{#each getPagesToShow(pagination.current, totalPages) as page}
 			{#if page === '...'}
 				<span class="px-2 text-gray-400">...</span>
 			{:else}
 				<button
 					class={`rounded-full border px-3 py-1.5 ${pagination.current === page ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300 hover:bg-gray-100'}`}
-					on:click={() => dispatch('pageChange', page)}
+					on:click={() => dispatch('pageChange', page)}>{page}</button
 				>
-					{page}
-				</button>
 			{/if}
 		{/each}
-
 		<button
 			class="flex items-center rounded-full border border-gray-300 px-3 py-1.5 hover:bg-gray-100 disabled:opacity-50"
 			on:click={() => dispatch('pageChange', pagination.current + 1)}

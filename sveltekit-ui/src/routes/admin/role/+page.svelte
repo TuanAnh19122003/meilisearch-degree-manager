@@ -5,7 +5,6 @@
 	import { toast } from 'svelte-sonner';
 	import RoleList from './RoleList.svelte';
 	import RoleForm from './RoleForm.svelte';
-	import { indexRoles } from '$lib/meili';
 	import axios from 'axios';
 
 	let roles: any[] = [];
@@ -33,33 +32,19 @@
 		return token ? { Authorization: `Bearer ${token}` } : {};
 	}
 
-	// FETCH DATA
+	// FETCH DATA (có search param gửi vào API)
 	async function fetchRoles(page = 1, pageSize = pagination.pageSize) {
 		loading = true;
 		try {
-			let response;
-			if (search.trim()) {
-				// Tìm kiếm Meilisearch
-				const offset = (page - 1) * pageSize;
-				const res = await indexRoles.search(search, { limit: pageSize, offset });
-				roles = res.hits;
-				pagination = {
-					current: page,
-					pageSize,
-					total: res.estimatedTotalHits || res.hits.length
-				};
-			} else {
-				// Lấy danh sách từ DB
-				response = await axios.get(`${API_URL}/roles`, {
-					params: { page, pageSize },
-					headers: getAuthHeader()
-				});
-				const { success, data, total, message } = response.data;
-				if (success) {
-					roles = data;
-					pagination = { current: page, pageSize, total };
-				} else toast.error(message || 'Lỗi tải dữ liệu');
-			}
+			const response = await axios.get(`${API_URL}/roles`, {
+				params: { page, pageSize, search },
+				headers: getAuthHeader()
+			});
+			const { success, data, total, message } = response.data;
+			if (success) {
+				roles = data;
+				pagination = { current: page, pageSize, total };
+			} else toast.error(message || 'Lỗi tải dữ liệu');
 		} catch (err) {
 			console.error(err);
 			toast.error('Lỗi khi tải danh sách vai trò');
@@ -82,7 +67,6 @@
 		viewingRole = role;
 	}
 
-	// CRUD thật vào DB + sync Meilisearch
 	async function handleDelete(id: string) {
 		const role = roles.find((r) => r.id === id);
 		const roleName = role?.name || 'vai trò này';
@@ -91,7 +75,6 @@
 
 		try {
 			await axios.delete(`${API_URL}/roles/${id}`, { headers: getAuthHeader() });
-			await indexRoles.deleteDocument(id);
 			toast.success('Xóa thành công');
 			const newPage =
 				roles.length === 1 && pagination.current > 1 ? pagination.current - 1 : pagination.current;
@@ -104,16 +87,13 @@
 
 	async function handleSubmit(role: any) {
 		try {
-			let dbResponse;
 			if (editingRole) {
-				dbResponse = await axios.put(`${API_URL}/roles/${editingRole.id}`, role, {
+				await axios.put(`${API_URL}/roles/${editingRole.id}`, role, {
 					headers: getAuthHeader()
 				});
-				await indexRoles.updateDocuments([{ ...role, id: editingRole.id }]);
 				toast.success('Cập nhật thành công');
 			} else {
-				dbResponse = await axios.post(`${API_URL}/roles`, role, { headers: getAuthHeader() });
-				await indexRoles.addDocuments([{ ...role, id: dbResponse.data.id }]);
+				await axios.post(`${API_URL}/roles`, role, { headers: getAuthHeader() });
 				toast.success('Thêm mới thành công');
 			}
 			openForm = false;
