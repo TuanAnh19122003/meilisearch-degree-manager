@@ -1,18 +1,22 @@
 const Major = require('../models/major.model');
 
 class MajorService {
-    static async findAll() {
-        const data = await Major.findAll({
-            order: [['createdAt', 'ASC']],
-            include: [
-                {
-                    model: require('../models/department.model'),
-                    as: 'department',
-                    attributes: ['id', 'name']
-                }
-            ]
-        });
-        return data;
+    static async findAll(options = {}) {
+        const { offset, limit } = options;
+
+        const queryOptions = {
+            include: {
+                model: require('../models/department.model'),
+                as: 'department',
+                attributes: ['id', 'name', 'code']
+            },
+            offset,
+            limit,
+            order: [['createdAt', 'ASC']]
+        };
+
+        const users = await Major.findAndCountAll(queryOptions);
+        return users;
     }
 
     static async findById(id) {
