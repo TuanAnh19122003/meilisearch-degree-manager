@@ -6,52 +6,54 @@ class LogController {
             const page = parseInt(req.query.page);
             const pageSize = parseInt(req.query.pageSize);
 
-            let result;
-            if (!page || !pageSize) {
-                result = await LogService.findAll();
-            } else {
-                const offset = (page - 1) * pageSize;
-                result = await LogService.findAll({ offset, limit: pageSize });
-            }
+            const result = await LogService.findAll({ page, pageSize });
 
-            res.status(200).json({
+            res.json({
                 success: true,
                 message: 'Lấy danh sách log thành công',
                 data: result.rows,
                 total: result.count
             });
-        } catch (error) {
-            res.status(500).json({ success: false, message: error.message });
+        } catch (err) {
+            res.status(500).json({ success: false, message: err.message });
         }
     }
 
     async findByUser(req, res) {
         try {
-            const { id } = req.params;
-            const result = await LogService.findByUser(id);
-            res.status(200).json({
+            const userId = req.params.id;
+            const page = parseInt(req.query.page);
+            const pageSize = parseInt(req.query.pageSize);
+
+            const result = await LogService.findByUser(userId, { page, pageSize });
+
+            res.json({
                 success: true,
-                message: `Lịch sử thao tác của user ${id}`,
+                message: `Lịch sử thao tác của user ${userId}`,
                 data: result.rows,
                 total: result.count
             });
-        } catch (error) {
-            res.status(500).json({ success: false, message: error.message });
+        } catch (err) {
+            res.status(500).json({ success: false, message: err.message });
         }
     }
 
     async findByStudent(req, res) {
         try {
-            const { id } = req.params;
-            const result = await LogService.findByStudent(id);
-            res.status(200).json({
+            const studentId = req.params.id;
+            const page = parseInt(req.query.page);
+            const pageSize = parseInt(req.query.pageSize);
+
+            const result = await LogService.findByStudent(studentId, { page, pageSize });
+
+            res.json({
                 success: true,
-                message: `Lịch sử thay đổi dữ liệu của sinh viên ${id}`,
+                message: `Lịch sử thao tác của sinh viên ${studentId}`,
                 data: result.rows,
                 total: result.count
             });
-        } catch (error) {
-            res.status(500).json({ success: false, message: error.message });
+        } catch (err) {
+            res.status(500).json({ success: false, message: err.message });
         }
     }
 
@@ -60,27 +62,30 @@ class LogController {
             const userId = req.user.id;
             const { action, targetId, targetType, ip } = req.body;
 
-            const data = await LogService.create({
-                userId,
-                action,
-                targetId,
-                targetType,
-                ip
-            });
+            const log = await LogService.create({ userId, action, targetId, targetType, ip });
 
-            res.status(201).json({
-                success: true,
-                message: 'Ghi log thành công',
-                data
-            });
-        } catch (error) {
-            res.status(500).json({
-                success: false,
-                message: 'Ghi log thất bại: ' + error.message
-            });
+            res.status(201).json({ success: true, message: 'Ghi log thành công', data: log });
+        } catch (err) {
+            res.status(500).json({ success: false, message: 'Ghi log thất bại: ' + err.message });
         }
     }
 
+    async delete(req, res) {
+        const { id } = req.params;
+        try {
+            await LogService.delete(id);
+            return res.status(200).json({
+                success: true,
+                message: 'Xóa log thành công'
+            });
+        } catch (err) {
+            console.error(err);
+            return res.status(404).json({
+                success: false,
+                message: err.message || 'Xóa log thất bại'
+            });
+        }
+    }
 }
 
 module.exports = new LogController();
