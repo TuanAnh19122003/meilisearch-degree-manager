@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Phôi Bằng Cử Nhân - Đại học Điện lực</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #eee;
+            font-family: "Times New Roman", serif;
+        }
+
+        .certificate {
+            width: 297mm;
+            height: 210mm;
+            background: #fff;
+            border: 3px solid #600;
+            padding: 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            box-sizing: border-box;
+        }
+
+        .side {
+            border: 1px solid #900;
+            padding: 30px;
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+            font-size: 14px;
+            line-height: 1.4;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .logo img {
+            width: 80px;
+        }
+
+        .title {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .title span {
+            display: block;
+        }
+
+        .red {
+            color: #900;
+            font-weight: bold;
+            font-size: 20px;
+            margin-top: 10px;
+        }
+
+        .field {
+            margin: 12px 0;
+            font-size: 16px;
+        }
+
+        .center {
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .bottom-left {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        .bottom-right {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        @page {
+            size: A4 landscape;
+            margin: 0;
+        }
+
+        @media print {
+            body {
+                background: none;
+            }
+
+            .certificate {
+                border: none;
+            }
+
+            .side {
+                border: 1px solid #000;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="certificate">
+        <!-- Bên trái: Tiếng Việt -->
+        <div class="side">
+            <div class="header">
+                CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM<br>
+                Độc lập – Tự do – Hạnh phúc
+            </div>
+            <div class="logo">
+                <img src="./logo.png" alt="Logo Electric Power University">
+            </div>
+            <div class="title">
+                HIỆU TRƯỞNG<br>
+                TRƯỜNG ĐẠI HỌC ĐIỆN LỰC<br>
+                <span class="red">cấp BẰNG CỬ NHÂN</span>
+            </div>
+
+            <div class="field center">cho</div>
+            <div class="field">Họ và tên: <%= fullname %></div>
+            <div class="field">Ngày sinh: <%= dob %></div>
+            <div class="field">Năm tốt nghiệp: <%= gradYear %></div>
+            <div class="field">Xếp loại tốt nghiệp: <b><%= classification %></b></div>
+            <div class="field">Hình thức đào tạo: chính quy</div>
+
+            <div class="bottom-left">
+                Số hiệu: <%= number %><br>
+                Số vào sổ cấp bằng:
+            </div>
+            <div class="bottom-right">
+                HIỆU TRƯỞNG<br><br><br>(Ký, ghi rõ họ tên, đóng dấu)
+            </div>
+        </div>
+
+        <!-- Bên phải: English -->
+        <div class="side">
+            <div class="header">
+                SOCIALIST REPUBLIC OF VIETNAM<br>
+                Independence – Freedom – Happiness
+            </div>
+            <div class="logo">
+                <img src="./logo.png" alt="Logo Electric Power University">
+            </div>
+            <div class="title">
+                THE RECTOR<br>
+                of ELECTRIC POWER UNIVERSITY<br>
+                <span class="red">confers THE DEGREE OF BACHELOR</span>
+            </div>
+
+            <div class="field center">upon</div>
+            <div class="field">Full name: <%= fullname %></div>
+            <div class="field">Date of birth: <%= dob %></div>
+            <div class="field">Year of graduation: <%= gradYear %></div>
+            <div class="field">Degree classification: <b><%= classificationEn %></b></div>
+            <div class="field">Mode of study: full-time</div>
+
+            <div class="bottom-left">
+                Serial number: <%= number %><br>
+                Reference number:
+            </div>
+            <div class="bottom-right">
+                THE RECTOR<br><br><br>(Signature & Seal)
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

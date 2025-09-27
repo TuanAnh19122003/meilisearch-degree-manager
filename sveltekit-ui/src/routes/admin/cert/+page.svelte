@@ -4,6 +4,7 @@
 	import axios from 'axios';
 	import CertList from './CertList.svelte';
 	import CertForm from './CertForm.svelte';
+	import { pageTitle } from '$lib/stores/pageTitle';
 
 	let certificates: any[] = [];
 	let pagination = { current: 1, pageSize: 6, total: 0 };
@@ -16,6 +17,7 @@
 
 	const API_URL = import.meta.env.VITE_API_URL;
 	let token = '';
+	pageTitle.set('Quản lý văn bằng');
 
 	onMount(() => {
 		if (typeof localStorage !== 'undefined') {

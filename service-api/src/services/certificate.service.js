@@ -9,7 +9,7 @@ class CertificateService {
                 {
                     model: require('../models/student.model'),
                     as:'student',
-                    attributes:['id','lastname','firstname']
+                    attributes:['id','lastname','firstname','dob']
                 }
             ],
             offset,
