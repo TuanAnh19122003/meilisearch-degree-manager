@@ -1,13 +1,21 @@
 const Course = require('../models/course.model');
 
 class CourseService {
-    static async findAll() {
-        const data = await Course.findAll({
-            order: [['createdAt', 'ASC']]
-        });
-        return data;
-    }
+    static async findAll(options = {}) {
+        const { offset, limit } = options;
 
+        const queryOptions = {
+            order: [['createdAt', 'ASC']]
+        };
+
+        if (offset !== undefined && limit !== undefined) {
+            queryOptions.offset = offset;
+            queryOptions.limit = limit;
+        }
+
+        const courses = await Course.findAndCountAll(queryOptions);
+        return courses;
+    }
     static async findById(id) {
         const course = await Course.findOne({ where: { id } });
         if (!course) throw new Error("Không tìm thấy môn học");

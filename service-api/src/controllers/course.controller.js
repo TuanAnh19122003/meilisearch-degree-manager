@@ -3,12 +3,32 @@ const CourseService = require('../services/course.service');
 class RoleController {
     async findAll(req, res) {
         try {
-            const data = await CourseService.findAll();
+            const page = parseInt(req.query.page);
+            const pageSize = parseInt(req.query.pageSize);
+
+            let result;
+
+            if (!page || !pageSize) {
+                result = await CourseService.findAll();
+                return res.status(200).json({
+                    success: true,
+                    message: 'Lấy tất cả môn học thành công',
+                    data: result.rows,
+                    total: result.count
+                });
+            }
+
+            const offset = (page - 1) * pageSize;
+            result = await CourseService.findAll({ offset, limit: pageSize });
+
             res.status(200).json({
                 success: true,
                 message: 'Lấy danh sách môn học thành công',
-                data
-            })
+                data: result.rows,
+                total: result.count,
+                page,
+                pageSize
+            });
         } catch (error) {
             res.status(500).json({
                 success: false,

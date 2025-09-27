@@ -9,6 +9,7 @@
 		GraduationCap,
 		Clipboard,
 		Award,
+		BookOpen,
 		ChevronLeft,
 		ChevronRight
 	} from 'lucide-svelte';
@@ -20,7 +21,7 @@
 		{ key: 'role-management', label: 'Quản lý vai trò', link: '/admin/role', icon: Shield },
 		{ key: 'faculty', label: 'Khoa', link: '/admin/department', icon: Home },
 		{ key: 'major', label: 'Chuyên ngành', link: '/admin/major', icon: Book },
-		{ key: 'template', label: 'Template', link: '/admin/template', icon: FileText },
+		{ key: 'course', label: 'Môn học', link: '/admin/course', icon: BookOpen  },
 		{ key: 'student', label: 'Sinh viên', link: '/admin/student', icon: GraduationCap },
 		{ key: 'certs', label: 'Quản lý văn bằng', link: '/admin/cert', icon: Award },
 		{ key: 'logs', label: 'Kiểm tra logs & văn bằng', link: '/admin/log', icon: Clipboard }
