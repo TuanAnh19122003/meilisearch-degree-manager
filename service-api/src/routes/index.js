@@ -31,7 +31,7 @@ router.use('/auth', auth);
 
 router.use('/student-gpa', studentgpa);
 router.use('/grades', gradeExtra);
-router.use('/certificates', certificatePrint);
+router.use('/certificate-print', certificatePrint);
 
 
 module.exports = router;

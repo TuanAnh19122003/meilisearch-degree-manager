@@ -3,16 +3,36 @@ const CertificateService = require('../services/certificate.service');
 class CertificateController {
     async findAll(req, res) {
         try {
-            const data = await CertificateService.findAll();
+            const page = parseInt(req.query.page);
+            const pageSize = parseInt(req.query.pageSize);
+
+            let result;
+
+            if (!page || !pageSize) {
+                result = await CertificateService.findAll();
+                return res.status(200).json({
+                    success: true,
+                    message: 'Lấy danh sách chứng chỉ thành công',
+                    data: result.rows,
+                    total: result.count
+                });
+            }
+
+            const offset = (page - 1) * pageSize;
+            result = await CertificateService.findAll({ offset, limit: pageSize });
+
             res.status(200).json({
                 success: true,
                 message: 'Lấy danh sách chứng chỉ thành công',
-                data
+                data: result.rows,
+                total: result.count,
+                page,
+                pageSize
             });
         } catch (error) {
             res.status(500).json({
                 success: false,
-                message: 'Đã xảy ra lỗi khi lấy danh sách',
+                message: 'Đã xảy ra lỗi khi lấy danh sách chứng chỉ',
                 error: error.message
             });
         }
@@ -29,7 +49,7 @@ class CertificateController {
         } catch (error) {
             res.status(404).json({
                 success: false,
-                message: 'Không tìm thấy certificate',
+                message: 'Không tìm thấy chứng chỉ',
                 error: error.message
             });
         }

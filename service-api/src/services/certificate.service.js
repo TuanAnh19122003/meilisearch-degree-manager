@@ -1,18 +1,24 @@
 const Certificate = require('../models/certificate.model');
 
 class CertificateService {
-    static async findAll() {
-        const data = await Certificate.findAll({
-            order: [['createdAt', 'ASC']],
-            include:[
+    static async findAll(options = {}) {
+        const { offset, limit } = options;
+
+        const queryOptions = {
+             include:[
                 {
                     model: require('../models/student.model'),
                     as:'student',
                     attributes:['id','lastname','firstname']
                 }
-            ]
-        });
-        return data
+            ],
+            offset,
+            limit,
+            order: [['createdAt', 'ASC']]
+        };
+
+        const certificates = await Certificate.findAndCountAll(queryOptions);
+        return certificates;
     }
 
     static async findById(id) {
