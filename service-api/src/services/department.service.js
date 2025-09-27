@@ -1,11 +1,20 @@
 const Department = require('../models/department.model');
 
 class DepartmentService {
-    static async findAll() {
-        const data = await Department.findAll({
+    static async findAll(options = {}) {
+        const { offset, limit } = options;
+
+        const queryOptions = {
             order: [['createdAt', 'ASC']]
-        });
-        return data;
+        };
+
+        if (offset !== undefined && limit !== undefined) {
+            queryOptions.offset = offset;
+            queryOptions.limit = limit;
+        }
+
+        const departments = await Department.findAndCountAll(queryOptions);
+        return departments;
     }
 
     static async findById(id) {
