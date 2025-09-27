@@ -71,6 +71,20 @@
 		}
 		return result;
 	}
+
+	// badge màu theo status
+	function statusClass(status: string) {
+		switch (status) {
+			case 'active':
+				return 'bg-green-100 text-green-700';
+			case 'inactive':
+				return 'bg-gray-200 text-gray-600';
+			case 'pending':
+				return 'bg-yellow-100 text-yellow-700';
+			default:
+				return 'bg-gray-100 text-gray-500';
+		}
+	}
 </script>
 
 <!-- View Toggle -->
@@ -104,6 +118,7 @@
 					<th class="px-4 py-3 text-left font-medium">Email</th>
 					<th class="px-4 py-3 text-left font-medium">Điện thoại</th>
 					<th class="px-4 py-3 text-left font-medium">Vai trò</th>
+					<th class="px-4 py-3 text-left font-medium">Trạng thái</th>
 					<th class="px-4 py-3 text-center font-medium">Hành động</th>
 				</tr>
 			</thead>
@@ -117,6 +132,16 @@
 						<td class="px-4 py-3">{item.email}</td>
 						<td class="px-4 py-3">{item.phone}</td>
 						<td class="px-4 py-3">{item.role?.name}</td>
+						<td class="px-4 py-3">
+							<span
+								class={`rounded-full px-3 py-1 text-xs font-medium ${
+									item.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+								}`}
+							>
+								{item.is_active ? 'Hoạt động' : 'Ngưng hoạt động'}
+							</span>
+						</td>
+
 						<td class="px-4 py-3 text-center">
 							<button
 								class="dropdown-trigger rounded-lg p-2 hover:bg-gray-100"
@@ -138,7 +163,9 @@
 				class="relative flex items-center gap-4 rounded-xl bg-white p-4 shadow-md transition hover:shadow-lg"
 			>
 				<img
-					src={`http://localhost:5000/${item.image}` || 'https://via.placeholder.com/64'}
+					src={item.image
+						? `http://localhost:5000/${item.image}`
+						: 'https://via.placeholder.com/64'}
 					alt="Avatar"
 					class="h-16 w-16 rounded-full object-cover"
 				/>
@@ -146,6 +173,13 @@
 					<h3 class="text-base font-semibold text-gray-800">{item.firstname} {item.lastname}</h3>
 					<p class="text-sm text-gray-500">{item.email}</p>
 					<p class="text-sm text-gray-500">{item.role?.name}</p>
+					<span
+						class={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+							item.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+						}`}
+					>
+						{item.is_active ? 'Hoạt động' : 'Ngưng hoạt động'}
+					</span>
 				</div>
 				<div class="absolute top-2 right-2">
 					<button
