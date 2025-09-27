@@ -3,6 +3,7 @@
 	import axios from 'axios';
 	import { goto } from '$app/navigation';
 	import { Mail, Lock, Eye, EyeOff } from 'lucide-svelte';
+	import { pageTitle } from '$lib/stores/pageTitle';
 
 	let email = '';
 	let password = '';
@@ -10,6 +11,7 @@
 	let loading = false;
 	let message = '';
 	let showPassword = false;
+	pageTitle.set('Đăng nhập');
 
 	onMount(() => {
 		// Kiểm tra nếu đã đăng nhập

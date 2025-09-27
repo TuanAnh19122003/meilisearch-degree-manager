@@ -135,7 +135,10 @@
 				class="relative flex items-center gap-4 rounded-xl bg-white p-4 shadow-md transition hover:shadow-lg"
 			>
 				<div class="flex-1">
-					<h3 class="text-base font-semibold text-gray-800">{item.student?.lastname} {item.student?.firstname}</h3>
+					<h3 class="text-base font-semibold text-gray-800">
+						{item.student?.lastname}
+						{item.student?.firstname}
+					</h3>
 					<p class="text-sm text-gray-500">{item.course?.name}</p>
 					<p class="font-mono text-sm text-blue-600">Điểm: {item.grade}</p>
 				</div>
@@ -180,31 +183,34 @@
 {/if}
 
 <!-- Pagination -->
-<div class="mt-6 flex items-center justify-center gap-2">
-	<button
-		class="flex items-center rounded-full border border-gray-300 px-3 py-1.5 hover:bg-gray-100 disabled:opacity-50"
-		on:click={() => dispatch('pageChange', pagination.current - 1)}
-		disabled={pagination.current <= 1}
-	>
-		<ChevronLeft class="h-4 w-4" />
-	</button>
-	{#each getPagesToShow(pagination.current, totalPages) as page}
-		{#if page === '...'}
-			<span class="px-2 text-gray-400">...</span>
-		{:else}
-			<button
-				class={`rounded-full border px-3 py-1.5 ${pagination.current === page ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300 hover:bg-gray-100'}`}
-				on:click={() => dispatch('pageChange', page)}
-			>
-				{page}
-			</button>
-		{/if}
-	{/each}
-	<button
-		class="flex items-center rounded-full border border-gray-300 px-3 py-1.5 hover:bg-gray-100 disabled:opacity-50"
-		on:click={() => dispatch('pageChange', pagination.current + 1)}
-		disabled={pagination.current >= totalPages}
-	>
-		<ChevronRight class="h-4 w-4" />
-	</button>
+<div class="mt-6 flex items-center justify-between text-sm">
+	<span class="text-gray-600">Trang {pagination.current} / {totalPages > 0 ? totalPages : 1}</span>
+	<div class="flex items-center gap-1">
+		<button
+			class="flex items-center rounded-full border border-gray-300 px-3 py-1.5 hover:bg-gray-100 disabled:opacity-50"
+			on:click={() => dispatch('pageChange', pagination.current - 1)}
+			disabled={pagination.current <= 1}
+		>
+			<ChevronLeft class="h-4 w-4" />
+		</button>
+		{#each getPagesToShow(pagination.current, totalPages) as page}
+			{#if page === '...'}
+				<span class="px-2 text-gray-400">...</span>
+			{:else}
+				<button
+					class={`rounded-full border px-3 py-1.5 ${pagination.current === page ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300 hover:bg-gray-100'}`}
+					on:click={() => dispatch('pageChange', page)}
+				>
+					{page}
+				</button>
+			{/if}
+		{/each}
+		<button
+			class="flex items-center rounded-full border border-gray-300 px-3 py-1.5 hover:bg-gray-100 disabled:opacity-50"
+			on:click={() => dispatch('pageChange', pagination.current + 1)}
+			disabled={pagination.current >= totalPages}
+		>
+			<ChevronRight class="h-4 w-4" />
+		</button>
+	</div>
 </div>
