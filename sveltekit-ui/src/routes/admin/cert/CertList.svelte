@@ -1,6 +1,14 @@
 <script lang="ts">
 	import { createEventDispatcher, onMount } from 'svelte';
-	import { Eye, Pencil, Trash2, MoreVertical, ChevronLeft, ChevronRight } from 'lucide-svelte';
+	import {
+		Eye,
+		Pencil,
+		Trash2,
+		MoreVertical,
+		ChevronLeft,
+		ChevronRight,
+		Printer
+	} from 'lucide-svelte';
 
 	export let data: any[] = [];
 	export let pagination = { current: 1, pageSize: 6, total: 0 };
@@ -44,6 +52,67 @@
 	}
 	function handleDelete(id) {
 		dispatch('delete', id);
+		closeMenu();
+	}
+
+	async function handlePrint(item) {
+		console.log('📌 In văn bằng cho:', item);
+
+		const resApi = await fetch(`http://localhost:5000/api/certificate-print/${item.id}`, {
+			headers: {
+				Authorization: `Bearer ${localStorage.getItem('token') || ''}`
+			}
+		});
+		const apiData = await resApi.json();
+		if (!apiData.success) {
+			alert('Không lấy được dữ liệu in văn bằng');
+			return;
+		}
+		const cert = apiData.data;
+		console.log('📌 Dữ liệu chi tiết certificate:', cert);
+
+		// mapping học lực
+		function translateClassification(hocLuc: string) {
+			switch (hocLuc) {
+				case 'Xuất sắc':
+					return 'Distinction';
+				case 'Giỏi':
+					return 'Excellent';
+				case 'Khá':
+					return 'Good';
+				case 'Trung bình':
+					return 'Average';
+				default:
+					return '';
+			}
+		}
+
+		const url = `/templates/${cert.type.toLowerCase()}.html`;
+		const res = await fetch(url);
+		let template = await res.text();
+		const logoRes = await fetch('/templates/logo.png');
+		const logoBlob = await logoRes.blob();
+		const logoBase64 = await new Promise((resolve) => {
+			const reader = new FileReader();
+			reader.onloadend = () => resolve(reader.result);
+			reader.readAsDataURL(logoBlob);
+		});
+
+		const html = template
+			.replace(/<%= logoBase64 %>/g, String(logoBase64))
+			.replace(/<%= fullname %>/g, `${cert.lastname} ${cert.firstname}`)
+			.replace(/<%= dob %>/g, new Date(cert.dob).toLocaleDateString('vi-VN'))
+			.replace(/<%= gradYear %>/g, new Date(cert.grad_date).getFullYear().toString())
+			.replace(/<%= classification %>/g, cert.hoc_luc || '')
+			.replace(/<%= classificationEn %>/g, translateClassification(cert.hoc_luc))
+			.replace(/<%= number %>/g, cert.number);
+
+		const win = window.open('', '_blank');
+		win.document.write(html);
+		win.document.close();
+		win.focus();
+		win.print();
+
 		closeMenu();
 	}
 
@@ -179,23 +248,31 @@
 
 {#if openMenuId && currentItem}
 	<div
-		class="fixed z-50 w-32 rounded-lg bg-white shadow-md"
+		class="fixed z-50 w-36 rounded-lg bg-white shadow-md"
 		style="top:{menuPos.top}px; left:{menuPos.left}px"
 	>
 		<button
-			class="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-100"
+			class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100"
 			on:click={() => handleView(currentItem)}
 		>
 			<Eye class="h-4 w-4 text-gray-600" /> Xem
 		</button>
 		<button
-			class="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-100"
+			class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100"
 			on:click={() => handleEdit(currentItem)}
 		>
 			<Pencil class="h-4 w-4 text-blue-600" /> Sửa
 		</button>
+		{#if currentItem.status === 'issued'}
+			<button
+				class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100"
+				on:click={() => handlePrint(currentItem)}
+			>
+				<Printer class="h-4 w-4 text-green-600" /> In
+			</button>
+		{/if}
 		<button
-			class="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-gray-100"
+			class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-gray-100"
 			on:click={() => handleDelete(currentItem.id)}
 		>
 			<Trash2 class="h-4 w-4" /> Xóa

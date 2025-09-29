@@ -40,7 +40,7 @@
 			});
 			const { success, data, total, message } = res.data;
 			if (success) {
-				certificates = data; // data đã có student
+				certificates = data;
 				pagination = { ...pagination, current: page, total };
 			} else toast.error(message || 'Lỗi tải dữ liệu');
 		} catch (err) {
