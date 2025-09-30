@@ -113,6 +113,34 @@ class StudentController {
             });
         }
     }
+
+    async total(req, res) {
+        try {
+            const result = await StudentService.findAll();
+            res.json({ total: result.count });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+
+    // Sinh viên theo ngành
+    async byMajor(req, res) {
+        try {
+            const all = await StudentService.findAll();
+            const map = {};
+
+            all.rows.forEach(student => {
+                const major = student.major?.name || 'Unknown';
+                if (!map[major]) map[major] = 0;
+                map[major]++;
+            });
+
+            const result = Object.keys(map).map(major => ({ major, count: map[major] }));
+            res.json(result);
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
 }
 
 module.exports = new StudentController();

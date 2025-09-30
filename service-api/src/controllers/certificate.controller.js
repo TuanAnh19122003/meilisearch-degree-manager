@@ -110,6 +110,48 @@ class CertificateController {
             });
         }
     }
+
+    async total(req, res) {
+        try {
+            const count = await CertificateService.total();
+            res.status(200).json({ total: count });
+        } catch (error) {
+            res.status(500).json({ message: 'Lỗi khi đếm chứng chỉ', error: error.message });
+        }
+    }
+
+    // Thống kê theo trạng thái
+    async statsByStatus(req, res) {
+        try {
+            const data = await CertificateService.statsByStatus();
+            res.status(200).json(data);
+        } catch (error) {
+            res.status(500).json({ message: 'Lỗi thống kê theo trạng thái', error: error.message });
+        }
+    }
+
+    // Thống kê theo năm
+    async statsByYear(req, res) {
+        try {
+            const data = await CertificateService.statsByYear();
+            res.status(200).json(data);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ message: 'Lỗi thống kê theo năm', error: error.message });
+        }
+    }
+
+    // Lấy recent certificates
+    async recent(req, res) {
+        try {
+            const limit = parseInt(req.query.limit) || 5;
+            const data = await CertificateService.recent(limit);
+            res.status(200).json(data);
+        } catch (error) {
+            res.status(500).json({ message: 'Lỗi khi lấy recent certificates', error: error.message });
+        }
+    }
+
 }
 
 module.exports = new CertificateController();
