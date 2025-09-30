@@ -10,20 +10,45 @@
 
 	let collapsed = false;
 
-	const fullTitle = derived(pageTitle, ($pageTitle) =>
-		$pageTitle ? `${$pageTitle}` : 'Admin'
-	);
+	const fullTitle = derived(pageTitle, ($pageTitle) => ($pageTitle ? `${$pageTitle}` : 'Admin'));
+
+	function isTokenExpired(token) {
+		try {
+			const payload = JSON.parse(atob(token.split('.')[1]));
+			const exp = payload.exp;
+			const now = Math.floor(Date.now() / 1000);
+			return now > exp;
+		} catch (e) {
+			return true;
+		}
+	}
+
+	function logout() {
+		localStorage.removeItem('token');
+		goto('/auth/login');
+	}
 
 	onMount(() => {
 		const token = localStorage.getItem('token');
-		if (!token) goto('/auth/login');
+		if (!token || isTokenExpired(token)) {
+			logout();
+			return;
+		}
 
 		const unsubscribe = fullTitle.subscribe((val) => {
 			document.title = val;
 		});
 
+		const interval = setInterval(() => {
+			const token = localStorage.getItem('token');
+			if (!token || isTokenExpired(token)) {
+				logout();
+			}
+		}, 60000);
+
 		return () => {
 			unsubscribe();
+			clearInterval(interval);
 		};
 	});
 </script>

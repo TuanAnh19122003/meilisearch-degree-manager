@@ -56,8 +56,6 @@
 	}
 
 	async function handlePrint(item) {
-		console.log('📌 In văn bằng cho:', item);
-
 		const resApi = await fetch(`http://localhost:5000/api/certificate-print/${item.id}`, {
 			headers: {
 				Authorization: `Bearer ${localStorage.getItem('token') || ''}`
@@ -69,7 +67,6 @@
 			return;
 		}
 		const cert = apiData.data;
-		console.log('📌 Dữ liệu chi tiết certificate:', cert);
 
 		// mapping học lực
 		function translateClassification(hocLuc: string) {

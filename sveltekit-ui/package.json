@@ -34,6 +34,7 @@
 	},
 	"dependencies": {
 		"axios": "^1.12.2",
+		"jwt-decode": "^4.0.0",
 		"lodash-es": "^4.17.21",
 		"lucide-svelte": "^0.544.0",
 		"meilisearch": "^0.53.0",
