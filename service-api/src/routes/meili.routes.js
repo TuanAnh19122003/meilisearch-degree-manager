@@ -10,7 +10,7 @@ router.get('/public-key', async (req, res) => {
         const key = await client.createKey({
             description: 'Public key for frontend',
             actions: ['search'],
-            indexes: ['roles', 'users', 'students'],
+            indexes: ['roles', 'users', 'students', 'certificates'],
             expiresAt: null
         });
         res.json({ success: true, publicKey: key.key });
@@ -20,38 +20,40 @@ router.get('/public-key', async (req, res) => {
     }
 });
 
-router.get('/student/:identifier', async (req, res) => {
+// Certificate search / list (pagination + status + identifier)
+router.get('/certificate', async (req, res) => {
     try {
-        const { identifier } = req.params;
+        const { identifier, status, page = 1, pageSize = 10 } = req.query;
+        const offset = (page - 1) * pageSize;
 
-        // Xác định xem identifier là code hay email
-        const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
-        const filter = isEmail ? `email = "${identifier}"` : `code = "${identifier}"`;
+        let filterParts = [];
+        if (identifier) {
+            const isNumber = /^CERT-\d{6,}$/.test(identifier); // ví dụ CERT-000001
+            if (isNumber) filterParts.push(`number = "${identifier}"`);
+            else filterParts.push(`student.code = "${identifier}"`);
+        }
+        if (status) filterParts.push(`status = "${status}"`);
 
-        const searchResult = await studentIndex.search('', {
-            filter,
-            limit: 1
+        const filterQuery = filterParts.length ? filterParts.join(' AND ') : undefined;
+
+        const result = await certificateIndex.search('', {
+            filter: filterQuery,
+            offset: Number(offset),
+            limit: Number(pageSize)
         });
 
-        if (!searchResult.hits || searchResult.hits.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Không tìm thấy sinh viên với mã hoặc email này'
-            });
+        if (identifier && (!result.hits || result.hits.length === 0)) {
+            return res.status(404).json({ success: false, message: 'Không tìm thấy certificate' });
         }
 
-        res.status(200).json({
+        res.json({
             success: true,
-            message: 'Tìm sinh viên thành công',
-            data: searchResult.hits[0]
+            data: result.hits,
+            total: result.estimatedTotalHits ?? result.hits.length
         });
     } catch (err) {
         console.error(err);
-        res.status(500).json({
-            success: false,
-            message: 'Lỗi khi tìm sinh viên',
-            error: err.message
-        });
+        res.status(500).json({ success: false, message: 'Lỗi khi tìm certificate', error: err.message });
     }
 });
 

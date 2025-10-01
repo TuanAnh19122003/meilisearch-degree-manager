@@ -1,50 +1,116 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { toast } from 'svelte-sonner';
+	import { MeiliSearch } from 'meilisearch';
 	import axios from 'axios';
+	import { pageTitle } from '$lib/stores/pageTitle';
+	import { toast } from 'svelte-sonner';
 	import CertList from './CertList.svelte';
 	import CertForm from './CertForm.svelte';
-	import { pageTitle } from '$lib/stores/pageTitle';
+	import { Plus } from 'lucide-svelte';
 
 	let certificates: any[] = [];
 	let pagination = { current: 1, pageSize: 6, total: 0 };
 	let search = '';
-	let loading = false;
+	let searchStatus = '';
 	let openForm = false;
-	let editingItem: any = null;
-	let viewingItem: any = null;
+	let editingCert: any = null;
+	let viewingCert: any = null;
+	let loading = false;
 	let viewMode: 'list' | 'card' = 'list';
 
 	const API_URL = import.meta.env.VITE_API_URL;
 	let token = '';
+	let certIndex: any = null;
+
 	pageTitle.set('Quản lý văn bằng');
 
-	onMount(() => {
-		if (typeof localStorage !== 'undefined') {
-			token = localStorage.getItem('token') || '';
-			if (!token) window.location.href = '/auth/login';
-			else fetchCertificates();
-		}
+	onMount(async () => {
+		token = localStorage.getItem('token') || '';
+		if (!token) return (window.location.href = '/auth/login');
+		await initSearch();
 	});
 
 	function getAuthHeader() {
 		return token ? { Authorization: `Bearer ${token}` } : {};
 	}
 
-	async function fetchCertificates(page = 1) {
+	async function initSearch() {
+		try {
+			const res = await fetch(`${API_URL}/meili/public-key`);
+			const data = await res.json();
+			if (!data.success) throw new Error('Không lấy được Meilisearch public key');
+
+			const client = new MeiliSearch({
+				host: import.meta.env.VITE_MEILI_HOST,
+				apiKey: data.publicKey
+			});
+
+			certIndex = client.index('certificates');
+			await fetchCertificates();
+		} catch (err) {
+			console.error(err);
+			toast.error('Không kết nối được MeiliSearch');
+		}
+	}
+
+	let searchTimeout: NodeJS.Timeout;
+	function handleSearchInput() {
+		clearTimeout(searchTimeout);
+		searchTimeout = setTimeout(() => fetchCertificates(1), 400);
+	}
+
+	async function fetchCertificates(page = 1, pageSize = pagination.pageSize) {
 		loading = true;
 		try {
-			const res = await axios.get(`${API_URL}/certificates`, {
-				params: { page, pageSize: pagination.pageSize, search },
-				headers: getAuthHeader()
-			});
-			const { success, data, total, message } = res.data;
-			if (success) {
-				certificates = data;
-				console.log(data);
+			let certList: any[] = [];
+			let total = 0;
 
-				pagination = { ...pagination, current: page, total };
-			} else toast.error(message || 'Lỗi tải dữ liệu');
+			// Nếu có search (số văn bằng hoặc mã sinh viên) hoặc status, search Meili
+			if ((search || searchStatus) && certIndex) {
+				const filters: string[] = [];
+
+				if (search) {
+					// number hoặc student code
+					filters.push(`number = "${search}" OR student.code = "${search}"`);
+				}
+				if (searchStatus) {
+					filters.push(`status = "${searchStatus}"`);
+				}
+
+				const filterQuery = filters.length ? filters.join(' AND ') : undefined;
+
+				const results = await certIndex.search('', {
+					filter: filterQuery,
+					offset: (page - 1) * pageSize,
+					limit: pageSize
+				});
+
+				certList = results.hits;
+				total = results.estimatedTotalHits ?? results.hits.length;
+			} else {
+				// Lấy dữ liệu từ backend
+				const params: any = { page, pageSize };
+				if (search) params.identifier = search;
+				if (searchStatus) params.status = searchStatus;
+
+				const res = await axios.get(`${API_URL}/certificates`, {
+					params,
+					headers: getAuthHeader()
+				});
+
+				const { success, data, total: totalRes, message } = res.data;
+				if (success) {
+					certList = data;
+					total = totalRes ?? data.length;
+				} else {
+					toast.error(message || 'Lỗi tải dữ liệu');
+					certList = [];
+					total = 0;
+				}
+			}
+
+			certificates = certList;
+			pagination = { current: page, pageSize, total };
 		} catch (err) {
 			console.error(err);
 			toast.error('Lỗi tải văn bằng');
@@ -54,44 +120,45 @@
 	}
 
 	function handleAdd() {
-		editingItem = null;
+		editingCert = null;
 		openForm = true;
 	}
-	function handleEdit(item) {
-		editingItem = item;
+	function handleEdit(cert: any) {
+		editingCert = cert;
 		openForm = true;
 	}
-
-	async function handleDelete(id: number) {
+	function handleView(cert: any) {
+		viewingCert = cert;
+	}
+	async function handleDelete(id: string) {
 		if (!window.confirm('Bạn có chắc chắn muốn xóa văn bằng này không?')) return;
 		try {
 			await axios.delete(`${API_URL}/certificates/${id}`, { headers: getAuthHeader() });
 			toast.success('Xóa thành công');
-			fetchCertificates(pagination.current);
+			const newPage =
+				certificates.length === 1 && pagination.current > 1
+					? pagination.current - 1
+					: pagination.current;
+			fetchCertificates(newPage, pagination.pageSize);
 		} catch (err) {
 			console.error(err);
 			toast.error('Xóa thất bại');
 		}
 	}
 
-	async function handleSubmit(formData) {
+	async function handleSubmit(formData: FormData) {
 		try {
-			if (editingItem) {
-				const res = await axios.put(`${API_URL}/certificates/${editingItem.id}`, formData, {
+			if (editingCert) {
+				await axios.put(`${API_URL}/certificates/${editingCert.id}`, formData, {
 					headers: getAuthHeader()
 				});
 				toast.success('Cập nhật thành công');
-				certificates = certificates.map((cert) =>
-					cert.id === editingItem.id ? { ...cert, ...res.data.data } : cert
-				);
 			} else {
-				const res = await axios.post(`${API_URL}/certificates`, formData, {
-					headers: getAuthHeader()
-				});
+				await axios.post(`${API_URL}/certificates`, formData, { headers: getAuthHeader() });
 				toast.success('Thêm mới thành công');
-				certificates = [res.data.data, ...certificates];
 			}
 			openForm = false;
+			fetchCertificates(1, pagination.pageSize);
 		} catch (err) {
 			console.error(err);
 			toast.error('Thao tác thất bại');
@@ -122,15 +189,27 @@
 		<div class="flex gap-3">
 			<input
 				type="text"
-				placeholder="Tìm kiếm..."
+				placeholder="Số văn bằng hoặc mã sinh viên"
 				bind:value={search}
-				on:input={() => fetchCertificates(1)}
-				class="w-64 rounded-lg border px-3 py-2"
+				on:input={handleSearchInput}
+				class="w-64 rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500"
 			/>
-			<button
-				class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white"
-				on:click={handleAdd}>Thêm</button
+			<select
+				bind:value={searchStatus}
+				on:change={() => fetchCertificates(1)}
+				class="rounded-lg border px-3 py-2"
 			>
+				<option value="">Tất cả trạng thái</option>
+				<option value="draft">Bản nháp</option>
+				<option value="issued">Đã cấp</option>
+				<option value="revoked">Thu hồi</option>
+			</select>
+			<button
+				class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+				on:click={handleAdd}
+			>
+				<Plus class="h-4 w-4" /> Thêm
+			</button>
 		</div>
 	</div>
 
@@ -143,96 +222,78 @@
 			{viewMode}
 			on:viewModeChange={(e) => handleViewModeChange(e.detail)}
 			on:edit={(e) => handleEdit(e.detail)}
+			on:view={(e) => handleView(e.detail)}
 			on:delete={(e) => handleDelete(e.detail)}
-			on:pageChange={(e) => fetchCertificates(e.detail)}
-			on:pageSizeChange={(e) => {
-				pagination.pageSize = e.detail;
-				fetchCertificates(1);
-			}}
-			on:view={(e) => (viewingItem = e.detail)}
+			on:pageChange={(e) => fetchCertificates(e.detail, pagination.pageSize)}
+			on:pageSizeChange={(e) => fetchCertificates(1, e.detail)}
 		/>
 	{/if}
 
-	{#if viewingItem}
+	{#if openForm}
+		<div class="fixed inset-0 flex items-center justify-center bg-black/40">
+			<CertForm
+				initialValues={editingCert}
+				on:submit={(e) => handleSubmit(e.detail)}
+				on:cancel={() => (openForm = false)}
+			/>
+		</div>
+	{/if}
+
+	{#if viewingCert}
 		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-			<div class="w-[520px] overflow-hidden rounded-xl bg-white shadow-xl">
-				<!-- Header -->
+			<!-- Modal xem certificate -->
+			<div class="animate-fade-in w-[520px] overflow-hidden rounded-xl bg-white shadow-xl">
 				<div
 					class="flex items-center gap-4 border-b bg-gradient-to-r from-blue-50 to-blue-100 px-6 py-4"
 				>
 					<div
 						class="flex h-14 w-14 items-center justify-center rounded-full bg-blue-200 text-lg font-bold text-blue-700"
 					>
-						{`${(viewingItem.student?.lastname?.[0] ?? 'C').toUpperCase()}${(viewingItem.student?.firstname?.[0] ?? '').toUpperCase()}`}
+						{viewingCert.student?.lastname?.[0]}{viewingCert.student?.firstname?.[0]}
 					</div>
 					<div>
 						<h3 class="text-xl font-semibold">
-							{viewingItem.student?.lastname}
-							{viewingItem.student?.firstname}
+							{viewingCert.student?.lastname}
+							{viewingCert.student?.firstname}
 						</h3>
-						<p class="text-sm text-gray-600">
-							Ngày sinh: {new Date(viewingItem.student?.dob).toLocaleDateString()}
-						</p>
+						<p class="text-sm text-gray-600">Mã SV: {viewingCert.student?.code ?? '-'}</p>
 					</div>
 				</div>
-
-				<!-- Body -->
 				<div class="space-y-3 px-6 py-4 text-gray-700">
-					<div><b>Mã văn bằng:</b> {viewingItem.number}</div>
-					<div><b>Loại:</b> {viewingItem.type}</div>
-					<div><b>Ngày tốt nghiệp:</b> {new Date(viewingItem.grad_date).toLocaleDateString()}</div>
-					<div><b>Nơi cấp:</b> {viewingItem.issuer}</div>
-					<div>
+					<p><b>Mã VB:</b> {viewingCert.number}</p>
+					<p><b>Loại:</b> {viewingCert.type}</p>
+					<p><b>Ngày tốt nghiệp:</b> {new Date(viewingCert.grad_date).toLocaleDateString()}</p>
+					<p>
 						<b>Trạng thái:</b>
 						<span
-							class={`rounded-full px-2 py-1 text-xs font-semibold ${statusClass(viewingItem.status)}`}
+							class={`rounded-full px-2 py-1 text-xs font-semibold ${statusClass(viewingCert.status)}`}
 						>
-							{viewingItem.status === 'issued'
+							{viewingCert.status === 'issued'
 								? 'Đã cấp'
-								: viewingItem.status === 'revoked'
+								: viewingCert.status === 'revoked'
 									? 'Thu hồi'
 									: 'Bản nháp'}
 						</span>
-					</div>
-					{#if viewingItem.file_url}
-						<div>
+					</p>
+					{#if viewingCert.file_url}
+						<p>
 							<b>File:</b>
-							<a href={viewingItem.file_url} target="_blank" class="text-blue-600 underline"
+							<a href={viewingCert.file_url} target="_blank" class="text-blue-600 underline"
 								>Xem / tải về</a
 							>
-						</div>
+						</p>
 					{/if}
 				</div>
-
-				<!-- Footer -->
-				<div class="flex justify-between border-t px-6 py-4 text-sm text-gray-500">
-					<span>Ngày tạo: {new Date(viewingItem.createdAt).toLocaleString()}</span>
-					<span>Cập nhật: {new Date(viewingItem.updatedAt).toLocaleString()}</span>
+				<div class="flex justify-between border-t px-6 py-3 text-sm text-gray-500">
+					<span>Ngày tạo: {new Date(viewingCert.createdAt).toLocaleString()}</span>
+					<span>Cập nhật: {new Date(viewingCert.updatedAt).toLocaleString()}</span>
 				</div>
-
 				<div class="bg-gray-50 px-6 py-3 text-right">
 					<button
 						class="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300"
-						on:click={() => (viewingItem = null)}
+						on:click={() => (viewingCert = null)}>Đóng</button
 					>
-						Đóng
-					</button>
 				</div>
-			</div>
-		</div>
-	{/if}
-
-	{#if openForm}
-		<div class="fixed inset-0 flex items-center justify-center bg-black/40">
-			<div class="w-[520px] rounded-lg bg-white p-6 shadow-lg">
-				<h3 class="mb-4 text-lg font-bold">
-					{editingItem ? 'Cập nhật văn bằng' : 'Thêm văn bằng'}
-				</h3>
-				<CertForm
-					initialValues={editingItem}
-					on:submit={(e) => handleSubmit(e.detail)}
-					on:cancel={() => (openForm = false)}
-				/>
 			</div>
 		</div>
 	{/if}

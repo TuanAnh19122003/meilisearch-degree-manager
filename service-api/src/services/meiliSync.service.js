@@ -3,19 +3,27 @@ const User = require('../models/user.model');
 const Student = require('../models/student.model');
 const Major = require('../models/major.model');
 const StudentGpaService = require('../services/studentGpa.service');
-const { roleIndex, userIndex, studentIndex } = require('../config/meili.client');
+const Certificate = require('../models/certificate.model');
+const { roleIndex, userIndex, studentIndex, certificateIndex } = require('../config/meili.client');
 
 async function syncTable(model, index, fields, extraMapper = null) {
     // Xóa toàn bộ dữ liệu cũ
-    // await index.deleteAllDocuments();
+    await index.deleteAllDocuments();
 
     const data = await model.findAll({
-        include: model === User ? [
+        include: model === Certificate ? [
+            {
+                model: require('../models/student.model'),
+                as: 'student',
+                attributes: ['id', 'code', 'firstname', 'lastname']
+            }
+        ] : model === User ? [
             { model: Role, as: 'role', attributes: ['id', 'name', 'code'] }
         ] : model === Student ? [
             { model: Major, as: 'major', attributes: ['id', 'name'] }
         ] : []
     });
+
 
     if (!data.length) return;
 
@@ -32,38 +40,34 @@ async function syncTable(model, index, fields, extraMapper = null) {
 
 async function syncAll() {
     try {
-        // Đồng bộ Role
+        // Role
         await syncTable(Role, roleIndex, ['id', 'name', 'code', 'description']);
 
-        // Đồng bộ User
+        // User
         await syncTable(User, userIndex,
             ['id', 'firstname', 'lastname', 'email', 'phone', 'is_active', 'image', 'roleId'],
-            item => ({
-                role: item.role ? { id: item.role.id, name: item.role.name, code: item.role.code } : null
-            })
+            item => ({ role: item.role ? { id: item.role.id, name: item.role.name, code: item.role.code } : null })
         );
 
-        // Đồng bộ Student + GPA + hoc_luc
+        // Student + GPA + hoc_luc
         await syncTable(Student, studentIndex,
             ['id', 'code', 'firstname', 'lastname', 'dob', 'gender', 'email', 'phone', 'address', 'majorId', 'image'],
             async (item) => {
-                let gpa = null;
-                let hoc_luc = 'Chưa có';
-
+                let gpa = null, hoc_luc = 'Chưa có';
                 try {
                     const gpaData = await StudentGpaService.findById(item.id);
                     gpa = gpaData.gpa;
                     hoc_luc = gpaData.hoc_luc || 'Chưa có';
-                    //console.log(`Student ${item.id} GPA: ${gpa}, Hoc luc: ${hoc_luc}`);
-                } catch (err) {
-                    //console.log(`Student ${item.id} chưa có GPA`);
-                }
+                } catch { }
+                return { major: item.major ? { id: item.major.id, name: item.major.name } : null, gpa, hoc_luc };
+            }
+        );
 
-                return {
-                    major: item.major ? { id: item.major.id, name: item.major.name } : null,
-                    gpa,
-                    hoc_luc
-                };
+        // Certificate
+        await syncTable(Certificate, certificateIndex,
+            ['id', 'studentId', 'number', 'type', 'grad_date', 'issuer', 'status', 'file_url'],
+            async (item) => {
+                return { student: item.student ? { id: item.student.id, code: item.student.code, firstname: item.student.firstname, lastname: item.student.lastname } : null };
             }
         );
 
