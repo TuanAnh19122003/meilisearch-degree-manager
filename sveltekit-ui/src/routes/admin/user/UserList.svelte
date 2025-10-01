@@ -4,9 +4,9 @@
 	import Pagination from '$lib/Pagination.svelte';
 	import ActionMenu from '$lib/ActionMenu.svelte';
 
-	export let data = [];
+	export let users = [];
 	export let pagination = { current: 1, pageSize: 6, total: 0 };
-	export let viewMode = 'list';
+	export let viewMode: 'list' | 'card' = 'list';
 
 	const dispatch = createEventDispatcher();
 
@@ -44,16 +44,16 @@
 		return () => document.removeEventListener('click', handleClickOutside);
 	});
 
-	function handleView(item) {
-		dispatch('view', item);
+	function handleView() {
+		dispatch('view', currentItem);
 		closeMenu();
 	}
-	function handleEdit(item) {
-		dispatch('edit', item);
+	function handleEdit() {
+		dispatch('edit', currentItem);
 		closeMenu();
 	}
-	function handleDelete(id) {
-		dispatch('delete', id);
+	function handleDelete() {
+		dispatch('delete', currentItem.id);
 		closeMenu();
 	}
 
@@ -105,15 +105,15 @@
 				</tr>
 			</thead>
 			<tbody class="divide-y divide-gray-100">
-				{#each data as item, index}
+				{#each users as item, index}
 					<tr class="transition-colors hover:bg-gray-50">
 						<td class="px-4 py-3 text-center text-gray-600">
 							{(pagination.current - 1) * pagination.pageSize + index + 1}
 						</td>
 						<td class="px-4 py-3">{item.firstname} {item.lastname}</td>
 						<td class="px-4 py-3">{item.email}</td>
-						<td class="px-4 py-3">{item.phone}</td>
-						<td class="px-4 py-3">{item.role?.name}</td>
+						<td class="px-4 py-3">{item.phone ?? '-'}</td>
+						<td class="px-4 py-3">{item.role?.name ?? '-'}</td>
 						<td class="px-4 py-3">
 							<span
 								class={`rounded-full px-3 py-1 text-xs font-medium ${
@@ -139,27 +139,19 @@
 {:else}
 	<!-- CARD VIEW -->
 	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-		{#each data as item}
-			<div
-				class="relative flex items-center gap-4 rounded-xl bg-white p-4 shadow-md transition hover:shadow-lg"
-			>
-				{#if item.image}
-					<img
-						src={`http://localhost:5000/${item.image}`}
-						alt="Avatar"
-						class="h-16 w-16 rounded-full object-cover"
-					/>
-				{:else}
-					<div
-						class="flex h-16 w-16 items-center justify-center rounded-full bg-gray-300 text-base font-semibold text-white"
-					>
+		{#each users as item}
+			<div class="relative flex items-center gap-4 rounded-xl bg-white p-4 shadow-md transition hover:shadow-lg">
+				<div class="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-gray-300 text-base font-semibold text-white">
+					{#if item.image}
+						<img src={`http://localhost:5000/${item.image}`} alt="Avatar" class="h-full w-full object-cover" />
+					{:else}
 						{getInitials(item.lastname, item.firstname)}
-					</div>
-				{/if}
+					{/if}
+				</div>
 				<div class="flex-1">
 					<h3 class="text-base font-semibold text-gray-800">{item.firstname} {item.lastname}</h3>
 					<p class="text-sm text-gray-500">{item.email}</p>
-					<p class="text-sm text-gray-500">{item.role?.name}</p>
+					<p class="text-sm text-gray-500">{item.role?.name ?? '-'}</p>
 					<span
 						class={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
 							item.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
@@ -169,10 +161,7 @@
 					</span>
 				</div>
 				<div class="absolute top-2 right-2">
-					<button
-						class="dropdown-trigger rounded-lg p-2 hover:bg-gray-100"
-						on:click={(e) => toggleMenu(item, e)}
-					>
+					<button class="dropdown-trigger rounded-lg p-2 hover:bg-gray-100" on:click={(e) => toggleMenu(item, e)}>
 						<MoreVertical class="h-4 w-4 text-gray-600" />
 					</button>
 				</div>
@@ -186,9 +175,9 @@
 	open={!!openMenuId}
 	position={menuPos}
 	item={currentItem}
-	on:view={e => handleView(e.detail)}
-	on:edit={e => handleEdit(e.detail)}
-	on:delete={e => handleDelete(e.detail)}
+	on:view={handleView}
+	on:edit={handleEdit}
+	on:delete={handleDelete}
 />
 
 <!-- Pagination -->

@@ -1,5 +1,3 @@
-require('dotenv').config();
-
 const { MeiliSearch } = require('meilisearch');
 
 const client = new MeiliSearch({
@@ -7,7 +5,20 @@ const client = new MeiliSearch({
     apiKey: process.env.MEILI_KEY,
 });
 
-const roleIndex = client.index('roles');
 const userIndex = client.index('users');
+const roleIndex = client.index('roles');
 
-module.exports = { client, roleIndex, userIndex };
+(async () => {
+    await userIndex.updateSearchableAttributes([
+        'firstname', 'lastname', 'email', 'phone', 'role.name'
+    ]);
+
+    await userIndex.updateDisplayedAttributes([
+        'id', 'firstname', 'lastname', 'email', 'phone', 'is_active', 'role', 'image'
+    ]);
+
+    await roleIndex.updateSearchableAttributes(['name', 'code']);
+    await roleIndex.updateDisplayedAttributes(['id', 'name', 'code', 'description']);
+})();
+
+module.exports = { client, userIndex, roleIndex };

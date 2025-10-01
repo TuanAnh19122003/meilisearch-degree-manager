@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { MeiliSearch } from 'meilisearch';
-	import { Plus, Pencil, Eye } from 'lucide-svelte';
+	import { Plus, Pencil } from 'lucide-svelte';
 	import { pageTitle } from '$lib/stores/pageTitle';
 	import { toast } from 'svelte-sonner';
 	import RoleList from './RoleList.svelte';
@@ -31,7 +31,6 @@
 		}
 	});
 
-	// Lấy public key và tạo Meilisearch client
 	async function initSearch() {
 		try {
 			const res = await fetch(`${API_URL}/meili/public-key`);
@@ -55,30 +54,26 @@
 		return token ? { Authorization: `Bearer ${token}` } : {};
 	}
 
-	// FETCH DATA
 	async function fetchRoles(page = 1, pageSize = pagination.pageSize) {
 		loading = true;
 		try {
 			if (search && roleIndex) {
-				// Tìm kiếm trên Meilisearch
-				const searchResults = await roleIndex.search(search, {
+				const results = await roleIndex.search(search, {
 					offset: (page - 1) * pageSize,
 					limit: pageSize
 				});
-
-				roles = searchResults.hits;
+				roles = results.hits;
 				pagination = {
 					current: page,
 					pageSize,
-					total: searchResults.estimatedTotalHits ?? 0
+					total: results.estimatedTotalHits ?? 0
 				};
 			} else {
-				// Fallback: gọi API backend
-				const response = await axios.get(`${API_URL}/roles`, {
-					params: { page, pageSize },
+				const res = await axios.get(`${API_URL}/roles`, {
+					params: { page, pageSize, search },
 					headers: getAuthHeader()
 				});
-				const { success, data, total, message } = response.data;
+				const { success, data, total, message } = res.data;
 				if (success) {
 					roles = data;
 					pagination = { current: page, pageSize, total };
@@ -92,32 +87,24 @@
 		}
 	}
 
-	// CRUD HANDLERS
 	function handleAdd() {
 		editingRole = null;
 		openForm = true;
 	}
-
 	function handleEdit(role: any) {
 		editingRole = role;
 		openForm = true;
 	}
-
 	function handleView(role: any) {
 		viewingRole = role;
 	}
-
 	async function handleDelete(id: string) {
-		const role = roles.find((r) => r.id === id);
-		const roleName = role?.name || 'vai trò này';
-		const confirmed = window.confirm(`Bạn có chắc chắn muốn xóa vai trò "${roleName}" không?`);
-		if (!confirmed) return;
+		if (!window.confirm('Bạn có chắc chắn muốn xóa vai trò này?')) return;
 
 		try {
 			await axios.delete(`${API_URL}/roles/${id}`, { headers: getAuthHeader() });
 			toast.success('Xóa thành công');
-			const newPage =
-				roles.length === 1 && pagination.current > 1 ? pagination.current - 1 : pagination.current;
+			const newPage = roles.length === 1 && pagination.current > 1 ? pagination.current - 1 : pagination.current;
 			fetchRoles(newPage, pagination.pageSize);
 		} catch (err) {
 			console.error(err);
@@ -128,9 +115,7 @@
 	async function handleSubmit(role: any) {
 		try {
 			if (editingRole) {
-				await axios.put(`${API_URL}/roles/${editingRole.id}`, role, {
-					headers: getAuthHeader()
-				});
+				await axios.put(`${API_URL}/roles/${editingRole.id}`, role, { headers: getAuthHeader() });
 				toast.success('Cập nhật thành công');
 			} else {
 				await axios.post(`${API_URL}/roles`, role, { headers: getAuthHeader() });
@@ -146,30 +131,16 @@
 </script>
 
 <div class="space-y-6">
-	<!-- HEADER -->
 	<div class="flex items-center justify-between">
-		<h2 class="flex items-center gap-2 text-2xl font-semibold">
-			<svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M3 7h18M3 12h18M3 17h18"
-				/>
-			</svg>
-			Danh sách vai trò
-		</h2>
+		<h2 class="text-2xl font-semibold">Danh sách vai trò</h2>
 		<div class="flex gap-3">
 			<input
 				placeholder="Tìm kiếm vai trò..."
 				bind:value={search}
 				on:input={() => fetchRoles(1, pagination.pageSize)}
-				class="w-64 rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
+				class="w-64 rounded-lg border px-3 py-2"
 			/>
-			<button
-				class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white shadow hover:bg-blue-700"
-				on:click={handleAdd}
-			>
+			<button class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white" on:click={handleAdd}>
 				<Plus class="h-4 w-4" /> Thêm
 			</button>
 		</div>
@@ -191,37 +162,20 @@
 		/>
 	{/if}
 
-	<!-- Modal Form -->
 	{#if openForm}
 		<div class="fixed inset-0 flex items-center justify-center bg-black/40">
-			<div class="animate-fade-in w-[420px] rounded-lg bg-white p-6 shadow-lg">
-				<h3 class="mb-4 flex items-center gap-2 text-lg font-bold">
-					{#if editingRole}
-						<Pencil class="h-5 w-5 text-blue-600" /> Cập nhật vai trò
-					{:else}
-						<Plus class="h-5 w-5 text-blue-600" /> Thêm vai trò
-					{/if}
-				</h3>
-				<RoleForm
-					initialValues={editingRole}
-					on:submit={(e) => handleSubmit(e.detail)}
-					on:cancel={() => (openForm = false)}
-				/>
+			<div class="w-[420px] rounded-lg bg-white p-6 shadow-lg">
+				<h3 class="mb-4 text-lg font-bold">{editingRole ? 'Cập nhật vai trò' : 'Thêm vai trò'}</h3>
+				<RoleForm initialValues={editingRole} on:submit={(e) => handleSubmit(e.detail)} on:cancel={() => (openForm = false)} />
 			</div>
 		</div>
 	{/if}
 
-	<!-- Modal View -->
 	{#if viewingRole}
 		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-			<div class="animate-fade-in w-[480px] overflow-hidden rounded-xl bg-white shadow-xl">
-				<!-- Header -->
-				<div
-					class="flex items-center gap-4 border-b bg-gradient-to-r from-purple-50 to-purple-100 px-6 py-5"
-				>
-					<div
-						class="flex h-14 w-14 items-center justify-center rounded-full bg-purple-200 text-lg font-bold tracking-tight text-purple-700"
-					>
+			<div class="w-[480px] rounded-xl bg-white shadow-xl">
+				<div class="flex items-center gap-4 border-b px-6 py-5">
+					<div class="flex h-14 w-14 items-center justify-center rounded-full bg-purple-200 text-lg font-bold text-purple-700">
 						{(viewingRole.name?.[0] ?? 'R').toUpperCase()}
 					</div>
 					<div>
@@ -229,20 +183,13 @@
 						<p class="text-sm text-gray-600">Mã: {viewingRole.code}</p>
 					</div>
 				</div>
-
-				<!-- Body -->
 				<div class="space-y-3 px-6 py-5 text-gray-700">
 					<div><b>ID:</b> {viewingRole.id}</div>
 					<div><b>Ngày tạo:</b> {new Date(viewingRole.createdAt).toLocaleString()}</div>
 					<div><b>Ngày cập nhật:</b> {new Date(viewingRole.updatedAt).toLocaleString()}</div>
 				</div>
-
-				<!-- Footer -->
 				<div class="flex justify-end bg-gray-50 px-6 py-3">
-					<button
-						class="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300"
-						on:click={() => (viewingRole = null)}
-					>
+					<button class="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300" on:click={() => (viewingRole = null)}>
 						Đóng
 					</button>
 				</div>
@@ -250,19 +197,3 @@
 		</div>
 	{/if}
 </div>
-
-<style>
-	.animate-fade-in {
-		animation: fade-in 0.25s ease-out;
-	}
-	@keyframes fade-in {
-		from {
-			opacity: 0;
-			transform: scale(0.95);
-		}
-		to {
-			opacity: 1;
-			transform: scale(1);
-		}
-	}
-</style>

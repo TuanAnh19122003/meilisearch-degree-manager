@@ -9,7 +9,7 @@ require('dotenv').config();
 const port = process.env.PORT || 5001;
 const db = require('./src/models/index');
 const api = require('./src/routes/index');
-const { syncAll } = require('./src/services/meiliSync.service'); // import sync module
+const { syncAll } = require('./src/services/meiliSync.service');
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

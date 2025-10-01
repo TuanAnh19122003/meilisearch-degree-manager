@@ -9,7 +9,6 @@
 	export let viewMode = 'list';
 
 	const dispatch = createEventDispatcher();
-
 	let openMenuId = null;
 	let menuPos = { top: 0, left: 0 };
 	let currentItem = null;
@@ -20,20 +19,17 @@
 			return;
 		}
 		const rect = event.currentTarget.getBoundingClientRect();
-		menuPos = { top: rect.bottom + window.scrollY, left: rect.right - 128 + window.scrollX };
+		menuPos = { top: rect.bottom + window.scrollY, left: rect.right - 160 + window.scrollX };
 		openMenuId = item.id;
 		currentItem = item;
 	}
-
 	function closeMenu() {
 		openMenuId = null;
 		currentItem = null;
 	}
-
 	function handleClickOutside(event) {
 		if (openMenuId && !event.target.closest('.dropdown-trigger')) closeMenu();
 	}
-
 	onMount(() => {
 		document.addEventListener('click', handleClickOutside);
 		return () => document.removeEventListener('click', handleClickOutside);
@@ -51,14 +47,11 @@
 		dispatch('delete', id);
 		closeMenu();
 	}
-
 	function toggleViewMode(e) {
 		dispatch('viewModeChange', e.target.checked ? 'card' : 'list');
 	}
-
 </script>
 
-<!-- View Toggle -->
 <div class="mb-4 flex items-center justify-end">
 	<label class="inline-flex cursor-pointer items-center">
 		<span class="mr-2 text-sm text-gray-600">Danh sách</span>
@@ -79,7 +72,6 @@
 </div>
 
 {#if viewMode === 'list'}
-	<!-- TABLE VIEW -->
 	<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
 		<table class="w-full border-collapse text-sm">
 			<thead class="bg-gray-50 text-gray-700">
@@ -91,10 +83,10 @@
 				</tr>
 			</thead>
 			<tbody class="divide-y divide-gray-100">
-				{#each data as item, index}
-					<tr class="transition-colors hover:bg-gray-50">
-						<td class="px-4 py-3 text-center text-gray-600"
-							>{(pagination.current - 1) * pagination.pageSize + index + 1}</td
+				{#each data as item, i}
+					<tr class="hover:bg-gray-50">
+						<td class="px-4 py-3 text-center"
+							>{(pagination.current - 1) * pagination.pageSize + i + 1}</td
 						>
 						<td class="px-4 py-3">{item.name}</td>
 						<td class="px-4 py-3 font-mono text-blue-600">{item.code}</td>
@@ -112,11 +104,10 @@
 		</table>
 	</div>
 {:else}
-	<!-- CARD VIEW -->
 	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 		{#each data as item}
 			<div
-				class="relative flex items-center gap-4 rounded-xl bg-white p-4 shadow-md transition hover:shadow-lg"
+				class="relative flex items-center gap-4 rounded-xl bg-white p-4 shadow-md hover:shadow-lg"
 			>
 				<div class="flex-1">
 					<h3 class="text-base font-semibold text-gray-800">{item.name}</h3>
@@ -135,7 +126,6 @@
 	</div>
 {/if}
 
-<!-- Dropdown menu -->
 <ActionMenu
 	open={!!openMenuId}
 	position={menuPos}
@@ -145,7 +135,6 @@
 	on:delete={(e) => handleDelete(e.detail)}
 />
 
-<!-- Pagination -->
 <Pagination
 	current={pagination.current}
 	pageSize={pagination.pageSize}
