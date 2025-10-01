@@ -12,6 +12,7 @@ const grade = require('./grade.routes');
 const certificate = require('./certificate.routes');
 const log = require('./log.routes');
 const auth = require('./auth.routes');
+const meili = require('./meili.routes');
 
 const studentgpa = require('./studentGpa.routes');
 const gradeExtra = require('./grade.extra.routes');
@@ -32,6 +33,7 @@ router.use('/auth', auth);
 router.use('/student-gpa', studentgpa);
 router.use('/grades', gradeExtra);
 router.use('/certificate-print', certificatePrint);
+router.use('/meili', meili)
 
 
 module.exports = router;

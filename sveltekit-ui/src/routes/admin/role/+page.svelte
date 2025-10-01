@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { MeiliSearch } from 'meilisearch';
 	import { Plus, Pencil, Eye } from 'lucide-svelte';
 	import { pageTitle } from '$lib/stores/pageTitle';
 	import { toast } from 'svelte-sonner';
@@ -20,31 +21,69 @@
 	pageTitle.set('Quản lý vai trò');
 
 	let token = '';
-	onMount(() => {
+	let roleIndex: any = null;
+
+	onMount(async () => {
 		if (typeof localStorage !== 'undefined') {
 			token = localStorage.getItem('token') || '';
 			if (!token) window.location.href = '/auth/login';
-			else fetchRoles();
+			else await initSearch();
 		}
 	});
+
+	// Lấy public key và tạo Meilisearch client
+	async function initSearch() {
+		try {
+			const res = await fetch(`${API_URL}/meili/public-key`);
+			const data = await res.json();
+			if (!data.success) throw new Error('Không lấy được Meilisearch public key');
+
+			const client = new MeiliSearch({
+				host: import.meta.env.VITE_MEILI_HOST,
+				apiKey: data.publicKey
+			});
+
+			roleIndex = client.index('roles');
+			await fetchRoles();
+		} catch (err) {
+			console.error(err);
+			toast.error('Không kết nối được Meilisearch');
+		}
+	}
 
 	function getAuthHeader() {
 		return token ? { Authorization: `Bearer ${token}` } : {};
 	}
 
-	// FETCH DATA (có search param gửi vào API)
+	// FETCH DATA
 	async function fetchRoles(page = 1, pageSize = pagination.pageSize) {
 		loading = true;
 		try {
-			const response = await axios.get(`${API_URL}/roles`, {
-				params: { page, pageSize, search },
-				headers: getAuthHeader()
-			});
-			const { success, data, total, message } = response.data;
-			if (success) {
-				roles = data;
-				pagination = { current: page, pageSize, total };
-			} else toast.error(message || 'Lỗi tải dữ liệu');
+			if (search && roleIndex) {
+				// Tìm kiếm trên Meilisearch
+				const searchResults = await roleIndex.search(search, {
+					offset: (page - 1) * pageSize,
+					limit: pageSize
+				});
+
+				roles = searchResults.hits;
+				pagination = {
+					current: page,
+					pageSize,
+					total: searchResults.estimatedTotalHits ?? 0
+				};
+			} else {
+				// Fallback: gọi API backend
+				const response = await axios.get(`${API_URL}/roles`, {
+					params: { page, pageSize },
+					headers: getAuthHeader()
+				});
+				const { success, data, total, message } = response.data;
+				if (success) {
+					roles = data;
+					pagination = { current: page, pageSize, total };
+				} else toast.error(message || 'Lỗi tải dữ liệu');
+			}
 		} catch (err) {
 			console.error(err);
 			toast.error('Lỗi khi tải danh sách vai trò');
@@ -53,6 +92,7 @@
 		}
 	}
 
+	// CRUD HANDLERS
 	function handleAdd() {
 		editingRole = null;
 		openForm = true;

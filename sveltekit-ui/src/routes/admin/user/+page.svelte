@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { MeiliSearch } from 'meilisearch';
 	import { pageTitle } from '$lib/stores/pageTitle';
 	import { toast } from 'svelte-sonner';
-	import axios from 'axios';
 	import { Plus } from 'lucide-svelte';
+	import axios from 'axios';
 	import UserList from './UserList.svelte';
 	import UserForm from './UserForm.svelte';
 
@@ -15,35 +16,71 @@
 	let viewingUser: any = null;
 	let loading = false;
 	let viewMode: 'list' | 'card' = 'list';
+	let userIndex: any = null;
 
 	const API_URL = import.meta.env.VITE_API_URL;
 	pageTitle.set('Quản lý người dùng');
 
 	let token = '';
-	onMount(() => {
+	onMount(async () => {
 		if (typeof localStorage !== 'undefined') {
 			token = localStorage.getItem('token') || '';
 			if (!token) window.location.href = '/auth/login';
-			else fetchUsers();
+			else await initSearch();
 		}
 	});
+
+	// Khởi tạo Meilisearch
+	async function initSearch() {
+		try {
+			const res = await fetch(`${API_URL}/meili/public-key`);
+			const data = await res.json();
+			if (!data.success) throw new Error('Không lấy được Meilisearch public key');
+
+			const client = new MeiliSearch({
+				host: import.meta.env.VITE_MEILI_HOST,
+				apiKey: data.publicKey
+			});
+
+			userIndex = client.index('users');
+			await fetchUsers();
+		} catch (err) {
+			console.error(err);
+			toast.error('Không kết nối được Meilisearch');
+		}
+	}
 
 	function getAuthHeader() {
 		return token ? { Authorization: `Bearer ${token}` } : {};
 	}
 
+	// FETCH USERS (có tìm kiếm)
 	async function fetchUsers(page = 1, pageSize = pagination.pageSize) {
 		loading = true;
 		try {
-			const res = await axios.get(`${API_URL}/users`, {
-				params: { page, pageSize, search },
-				headers: getAuthHeader()
-			});
-			const { success, data, total, message } = res.data;
-			if (success) {
-				users = data;
-				pagination = { current: page, pageSize, total };
-			} else toast.error(message || 'Lỗi tải dữ liệu');
+			if (search && userIndex) {
+				const results = await userIndex.search(search, {
+					offset: (page - 1) * pageSize,
+					limit: pageSize
+				});
+
+				users = results.hits;
+				pagination = {
+					current: page,
+					pageSize,
+					total: results.estimatedTotalHits ?? 0
+				};
+			} else {
+				const res = await axios.get(`${API_URL}/users`, {
+					params: { page, pageSize, search },
+					headers: getAuthHeader()
+				});
+				const { success, data, total, message } = res.data;
+				if (success) {
+					users = data;
+					pagination = { current: page, pageSize, total };
+				} else toast.error(message || 'Lỗi tải dữ liệu');
+			}
 		} catch (err) {
 			console.error(err);
 			toast.error('Lỗi khi tải danh sách người dùng');
@@ -52,6 +89,7 @@
 		}
 	}
 
+	// CRUD HANDLERS
 	function handleAdd() {
 		editingUser = null;
 		openForm = true;
@@ -64,8 +102,8 @@
 		viewingUser = user;
 	}
 	async function handleDelete(id: string) {
-		const confirmed = window.confirm('Bạn có chắc chắn muốn xóa người dùng này không?');
-		if (!confirmed) return;
+		if (!window.confirm('Bạn có chắc chắn muốn xóa người dùng này không?')) return;
+
 		try {
 			await axios.delete(`${API_URL}/users/${id}`, { headers: getAuthHeader() });
 			toast.success('Xóa thành công');
@@ -107,7 +145,7 @@
 		<h2 class="text-2xl font-semibold">Danh sách người dùng</h2>
 		<div class="flex gap-3">
 			<input
-				placeholder="Tìm kiếm..."
+				placeholder="Tìm kiếm theo tên, email, vai trò..."
 				bind:value={search}
 				on:input={() => fetchUsers(1, pagination.pageSize)}
 				class="w-64 rounded-lg border px-3 py-2"
@@ -137,6 +175,7 @@
 		/>
 	{/if}
 
+	<!-- Modal Form -->
 	{#if openForm}
 		<div class="fixed inset-0 flex items-center justify-center bg-black/40">
 			<div class="w-[520px] rounded-lg bg-white p-6 shadow-lg">
@@ -152,6 +191,7 @@
 		</div>
 	{/if}
 
+	<!-- Modal View -->
 	{#if viewingUser}
 		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
 			<div class="animate-fade-in w-[480px] overflow-hidden rounded-xl bg-white shadow-xl">
@@ -176,8 +216,7 @@
 					</div>
 					<div>
 						<h3 class="text-xl font-semibold text-gray-800">
-							{viewingUser.firstname}
-							{viewingUser.lastname}
+							{viewingUser.firstname} {viewingUser.lastname}
 						</h3>
 						<p class="text-sm text-gray-600">ID: {viewingUser.id}</p>
 					</div>
@@ -201,8 +240,8 @@
 				<div class="bg-gray-50 px-6 py-3 text-right">
 					<button
 						class="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300"
-						on:click={() => (viewingUser = null)}>Đóng</button
-					>
+						on:click={() => (viewingUser = null)}
+					>Đóng</button>
 				</div>
 			</div>
 		</div>

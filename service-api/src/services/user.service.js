@@ -1,5 +1,7 @@
 const hashPassword = require('../utils/hashPassword');
 const User = require('../models/user.model');
+const roleIndex = require('../config/meili.client').roleIndex; // Nếu cần
+const userIndex = require('../config/meili.client').userIndex;
 const path = require('path');
 const fs = require('fs');
 
@@ -18,8 +20,7 @@ class UserService {
             order: [['createdAt', 'ASC']]
         };
 
-        const users = await User.findAndCountAll(queryOptions);
-        return users;
+        return await User.findAndCountAll(queryOptions);
     }
 
     static async findById(id) {
@@ -38,19 +39,26 @@ class UserService {
     }
 
     static async create(data, file) {
-        if (data.password) {
-            data.password = await hashPassword(data.password);
-        }
-        if (file) {
-            data.image = `uploads/${file.filename}`;
-        }
+        if (data.password) data.password = await hashPassword(data.password);
+        if (file) data.image = `uploads/${file.filename}`;
 
         const user = await User.create(data);
+
+        // Đồng bộ lên Meilisearch
+        await userIndex.addDocuments([{
+            id: user.id,
+            firstname: user.firstname,
+            lastname: user.lastname,
+            email: user.email,
+            phone: user.phone,
+            roleId: user.roleId
+        }]);
+
         return user;
     }
 
     static async update(id, data, file) {
-        const user = await User.findOne({ where: { id: id } });
+        const user = await User.findOne({ where: { id } });
         if (!user) throw new Error('User không tồn tại');
 
         if (data.password && data.password !== user.password) {
@@ -58,19 +66,28 @@ class UserService {
         } else {
             delete data.password;
         }
+
         if (file) {
             if (user.image) {
                 const oldImagePath = path.join(__dirname, '..', user.image);
-
-                if (fs.existsSync(oldImagePath)) {
-                    fs.unlinkSync(oldImagePath);
-                }
+                if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
             }
-
             data.image = `uploads/${file.filename}`;
         }
 
-        return await user.update(data)
+        const updatedUser = await user.update(data);
+
+        // Cập nhật Meilisearch
+        await userIndex.updateDocuments([{
+            id: updatedUser.id,
+            firstname: updatedUser.firstname,
+            lastname: updatedUser.lastname,
+            email: updatedUser.email,
+            phone: updatedUser.phone,
+            roleId: updatedUser.roleId
+        }]);
+
+        return updatedUser;
     }
 
     static async delete(id) {
@@ -79,14 +96,16 @@ class UserService {
 
         if (user.image) {
             const imagePath = path.join(__dirname, '..', user.image);
-            if (fs.existsSync(imagePath)) {
-                fs.unlinkSync(imagePath);
-            }
+            if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
         }
 
-        return await User.destroy({ where: { id } });
-    }
+        const deletedCount = await User.destroy({ where: { id } });
 
+        // Xóa khỏi Meilisearch
+        if (deletedCount > 0) await userIndex.deleteDocument(id);
+
+        return deletedCount;
+    }
 }
 
 module.exports = UserService;
