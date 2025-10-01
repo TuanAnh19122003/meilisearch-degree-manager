@@ -90,6 +90,7 @@
 				<th class="px-4 py-3 text-left font-medium">Họ tên</th>
 				<th class="px-4 py-3 text-left font-medium">Email</th>
 				<th class="px-4 py-3 text-left font-medium">Phone</th>
+				<th class="px-4 py-3 text-left font-medium">Ngành</th>
 				<th class="px-4 py-3 text-center font-medium">GPA</th>
 				<th class="px-4 py-3 text-center font-medium">Hành động</th>
 			</tr>
@@ -104,6 +105,7 @@
 					<td class="px-4 py-3">{item.lastname} {item.firstname}</td>
 					<td class="px-4 py-3">{item.email}</td>
 					<td class="px-4 py-3">{item.phone}</td>
+					<td class="px-4 py-3">{item.major?.name ?? '-'}</td>
 					<td class="px-4 py-3 text-center">{item.gpa ?? '-'}</td>
 					<td class="px-4 py-3 text-center">
 						<button
@@ -139,6 +141,7 @@
 					<h3 class="text-base font-semibold">{item.lastname} {item.firstname}</h3>
 					<p class="text-sm text-gray-500">{item.email}</p>
 					<p class="text-sm text-gray-500">{item.phone}</p>
+					<p class="text-sm text-gray-500">Ngành: {item.major?.name ?? '-'}</p>
 					<p class="mt-1 text-sm text-gray-600">GPA: {item.gpa ?? 'Chưa có'}</p>
 				</div>
 				<div class="absolute top-2 right-2">

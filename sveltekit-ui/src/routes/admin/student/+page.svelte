@@ -1,64 +1,134 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Plus, Pencil, Eye } from 'lucide-svelte';
+	import { MeiliSearch } from 'meilisearch';
+	import axios from 'axios';
 	import { pageTitle } from '$lib/stores/pageTitle';
 	import { toast } from 'svelte-sonner';
 	import StudentList from './StudentList.svelte';
 	import StudentForm from './StudentForm.svelte';
-	import axios from 'axios';
+	import { Plus } from 'lucide-svelte';
 
 	let students: any[] = [];
 	let pagination = { current: 1, pageSize: 6, total: 0 };
-	let viewMode: 'list' | 'card' = 'list';
 	let search = '';
 	let openForm = false;
 	let editingStudent: any = null;
 	let viewingStudent: any = null;
 	let loading = false;
+	let viewMode: 'list' | 'card' = 'list';
 
 	const API_URL = import.meta.env.VITE_API_URL;
 	pageTitle.set('Quản lý sinh viên');
 
 	let token = '';
-	onMount(() => {
+	let studentIndex: any = null;
+
+	onMount(async () => {
 		token = localStorage.getItem('token') || '';
-		if (!token) window.location.href = '/auth/login';
-		else fetchStudents();
+		if (!token) return (window.location.href = '/auth/login');
+		await initSearch();
 	});
 
 	function getAuthHeader() {
 		return token ? { Authorization: `Bearer ${token}` } : {};
 	}
 
+	// Khởi tạo MeiliSearch public key
+	async function initSearch() {
+		try {
+			const res = await fetch(`${API_URL}/meili/public-key`);
+			const data = await res.json();
+			if (!data.success) throw new Error('Không lấy được Meilisearch public key');
+
+			const client = new MeiliSearch({
+				host: import.meta.env.VITE_MEILI_HOST,
+				apiKey: data.publicKey
+			});
+			studentIndex = client.index('students');
+			await fetchStudents();
+		} catch (err) {
+			console.error(err);
+			toast.error('Không kết nối được Meilisearch');
+		}
+	}
+
+	// Debounce search
+	let searchTimeout: NodeJS.Timeout;
+	function handleSearchInput() {
+		clearTimeout(searchTimeout);
+		searchTimeout = setTimeout(() => fetchStudents(1, pagination.pageSize), 400);
+	}
+
+	// Lấy danh sách sinh viên
+	async function fetchGpaForStudents(students: any[]) {
+		const gpaPromises = students.map(async (s) => {
+			try {
+				const resGpa = await axios.get(`${API_URL}/student-gpa/${s.id}`, {
+					headers: getAuthHeader()
+				});
+				s.gpa = resGpa.data.data.gpa;
+			} catch {
+				s.gpa = null;
+			}
+		});
+		await Promise.all(gpaPromises);
+	}
+
 	async function fetchStudents(page = 1, pageSize = pagination.pageSize) {
 		loading = true;
 		try {
-			const res = await axios.get(`${API_URL}/students`, {
-				params: { page, pageSize, search },
-				headers: getAuthHeader()
-			});
-			const { success, data, total, message } = res.data;
-			if (success) {
-				students = data;
+			let studentList: any[] = [];
+			let total = 0;
 
-				// Fetch GPA từng sinh viên
-				const gpaPromises = students.map(async (s) => {
-					try {
-						const resGpa = await axios.get(`${API_URL}/student-gpa/${s.id}`, {
-							headers: getAuthHeader()
-						});
-						s.gpa = resGpa.data.data.gpa;
-					} catch {
-						s.gpa = null;
+			if (search && studentIndex) {
+				const isUniqueField = /^[A-Z]{2}\d+$/.test(search) || /\S+@\S+\.\S+/.test(search);
+
+				if (isUniqueField) {
+					const res = await fetch(`${API_URL}/meili/student/${search}`);
+					const data = await res.json();
+					if (data.success && data.data) {
+						studentList = [{ ...data.data, major: data.data.major || { name: '-' } }];
+						total = 1;
+					} else {
+						studentList = [];
+						total = 0;
+						toast.error('Không tìm thấy sinh viên với mã hoặc email này');
 					}
+				} else {
+					const results = await studentIndex.search(search, {
+						offset: (page - 1) * pageSize,
+						limit: pageSize
+					});
+					studentList = results.hits.map((s: any) => ({
+						...s,
+						major: s.major || { name: '-' }
+					}));
+					total = results.estimatedTotalHits ?? 0;
+				}
+			} else {
+				const res = await axios.get(`${API_URL}/students`, {
+					params: { page, pageSize, search },
+					headers: getAuthHeader()
 				});
-				await Promise.all(gpaPromises);
+				const { success, data, total: totalRes, message } = res.data;
+				if (success) {
+					studentList = data.map((s: any) => ({ ...s, major: s.major || { name: '-' } }));
+					total = totalRes;
+				} else {
+					toast.error(message || 'Lỗi tải danh sách sinh viên');
+				}
+			}
 
-				pagination = { current: page, pageSize, total };
-			} else toast.error(message || 'Lỗi tải danh sách sinh viên');
+			// Lấy GPA cho tất cả student nếu có
+			if (studentList.length > 0) {
+				await fetchGpaForStudents(studentList);
+			}
+
+			students = studentList;
+			pagination = { current: page, pageSize, total };
 		} catch (err) {
 			console.error(err);
-			toast.error('Lỗi khi tải dữ liệu');
+			toast.error('Lỗi khi tải dữ liệu sinh viên');
 		} finally {
 			loading = false;
 		}
@@ -79,8 +149,7 @@
 	}
 
 	async function handleDelete(id: string) {
-		const confirmed = window.confirm('Bạn có chắc chắn muốn xóa sinh viên này không?');
-		if (!confirmed) return;
+		if (!window.confirm('Bạn có chắc chắn muốn xóa sinh viên này không?')) return;
 		try {
 			await axios.delete(`${API_URL}/students/${id}`, { headers: getAuthHeader() });
 			toast.success('Xóa thành công');
@@ -95,15 +164,17 @@
 		}
 	}
 
-	async function handleSubmit(student: any) {
+	async function handleSubmit(formData: FormData) {
 		try {
 			if (editingStudent) {
-				await axios.put(`${API_URL}/students/${editingStudent.id}`, student, {
-					headers: getAuthHeader()
+				await axios.put(`${API_URL}/students/${editingStudent.id}`, formData, {
+					headers: { ...getAuthHeader(), 'Content-Type': 'multipart/form-data' }
 				});
 				toast.success('Cập nhật thành công');
 			} else {
-				await axios.post(`${API_URL}/students`, student, { headers: getAuthHeader() });
+				await axios.post(`${API_URL}/students`, formData, {
+					headers: { ...getAuthHeader(), 'Content-Type': 'multipart/form-data' }
+				});
 				toast.success('Thêm mới thành công');
 			}
 			openForm = false;
@@ -112,6 +183,10 @@
 			console.error(err);
 			toast.error('Thao tác thất bại');
 		}
+	}
+
+	function handleViewModeChange(mode: 'list' | 'card') {
+		viewMode = mode;
 	}
 </script>
 
@@ -130,9 +205,9 @@
 		</h2>
 		<div class="flex gap-3">
 			<input
-				placeholder="Tìm kiếm..."
+				placeholder="Tìm kiếm theo tên, email, mã sinh viên..."
 				bind:value={search}
-				on:input={() => fetchStudents(1, pagination.pageSize)}
+				on:input={handleSearchInput}
 				class="w-64 rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500"
 			/>
 			<button
@@ -156,7 +231,7 @@
 			on:delete={(e) => handleDelete(e.detail)}
 			on:pageChange={(e) => fetchStudents(e.detail, pagination.pageSize)}
 			on:pageSizeChange={(e) => fetchStudents(1, e.detail)}
-			on:viewModeChange={(e) => (viewMode = e.detail)}
+			on:viewModeChange={(e) => handleViewModeChange(e.detail)}
 		/>
 	{/if}
 
@@ -173,12 +248,11 @@
 	{#if viewingStudent}
 		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
 			<div class="animate-fade-in w-[480px] overflow-hidden rounded-xl bg-white shadow-xl">
-				<!-- Header -->
 				<div
 					class="flex items-center gap-4 border-b bg-gradient-to-r from-blue-50 to-blue-100 px-6 py-5"
 				>
 					<div
-						class="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-blue-200 text-xl font-bold tracking-tight text-blue-700"
+						class="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-blue-200 text-xl font-bold text-blue-700"
 					>
 						{#if viewingStudent.image}
 							<img
@@ -200,8 +274,6 @@
 						<p class="text-sm text-gray-600">Mã sinh viên: {viewingStudent.code}</p>
 					</div>
 				</div>
-
-				<!-- Body -->
 				<div class="space-y-3 px-6 py-5 text-gray-700">
 					<p><b>Email:</b> {viewingStudent.email}</p>
 					<p><b>Phone:</b> {viewingStudent.phone}</p>
@@ -209,14 +281,10 @@
 					<p><b>Địa chỉ:</b> {viewingStudent.address ?? '-'}</p>
 					<p><b>GPA:</b> {viewingStudent.gpa ?? 'Chưa có'}</p>
 				</div>
-
-				<!-- Footer -->
 				<div class="flex justify-between border-t px-6 py-4 text-sm text-gray-500">
 					<span>Ngày tạo: {new Date(viewingStudent.createdAt).toLocaleString()}</span>
 					<span>Cập nhật: {new Date(viewingStudent.updatedAt).toLocaleString()}</span>
 				</div>
-
-				<!-- Actions -->
 				<div class="bg-gray-50 px-6 py-3 text-right">
 					<button
 						class="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300"
