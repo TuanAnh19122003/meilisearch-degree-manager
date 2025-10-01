@@ -9,7 +9,7 @@ class GradeService {
                 {
                     model: require('../models/student.model'),
                     as: 'student',
-                    attributes: ['id', 'lastname', 'firstname']
+                    attributes: ['id', 'lastname', 'firstname', 'code']
                 },
                 {
                     model: require('../models/course.model'),

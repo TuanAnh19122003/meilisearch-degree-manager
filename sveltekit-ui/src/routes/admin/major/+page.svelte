@@ -8,7 +8,7 @@
 	import axios from 'axios';
 
 	let majors: any[] = [];
-	let departments: any[] = []; // để chọn deptId
+	let departments: any[] = [];
 	let pagination = { current: 1, pageSize: 6, total: 0 };
 	let viewMode: 'list' | 'card' = 'list';
 	let search = '';
@@ -42,7 +42,7 @@
 			departments = res.data.data || [];
 		} catch (err) {
 			console.error(err);
-			toast.error("Không tải được danh sách phòng ban");
+			toast.error('Không tải được danh sách phòng ban');
 		}
 	}
 
@@ -90,9 +90,7 @@
 			await axios.delete(`${API_URL}/majors/${id}`, { headers: getAuthHeader() });
 			toast.success('Xóa thành công');
 			const newPage =
-				majors.length === 1 && pagination.current > 1
-					? pagination.current - 1
-					: pagination.current;
+				majors.length === 1 && pagination.current > 1 ? pagination.current - 1 : pagination.current;
 			fetchMajors(newPage, pagination.pageSize);
 		} catch (err) {
 			console.error(err);
@@ -123,9 +121,7 @@
 <div class="space-y-6">
 	<!-- HEADER -->
 	<div class="flex items-center justify-between">
-		<h2 class="flex items-center gap-2 text-2xl font-semibold text-blue-600">
-			Ngành học
-		</h2>
+		<h2 class="flex items-center gap-2 text-2xl font-semibold text-blue-600">Ngành học</h2>
 		<div class="flex gap-3">
 			<input
 				placeholder="Tìm kiếm ngành học..."
@@ -152,6 +148,7 @@
 			on:edit={(e) => handleEdit(e.detail)}
 			on:view={(e) => handleView(e.detail)}
 			on:delete={(e) => handleDelete(e.detail)}
+			on:pageSizeChange={(e) => fetchMajors(1, e.detail)}
 			on:pageChange={(e) => fetchMajors(e.detail, pagination.pageSize)}
 			on:viewModeChange={(e) => (viewMode = e.detail)}
 		/>
@@ -180,22 +177,42 @@
 
 	<!-- Modal View -->
 	{#if viewingMajor}
-		<div class="fixed inset-0 flex items-center justify-center bg-black/40">
-			<div class="animate-fade-in w-[420px] rounded-lg bg-white p-6 shadow-lg">
-				<h3 class="mb-4 flex items-center gap-2 text-lg font-bold">
-					<Eye class="h-5 w-5 text-blue-600" /> Chi tiết ngành học
-				</h3>
-				<div class="space-y-2 text-gray-700">
-					<p><strong>ID:</strong> {viewingMajor.id}</p>
-					<p><strong>Tên ngành:</strong> {viewingMajor.name}</p>
-					<p><strong>Mã:</strong> {viewingMajor.code}</p>
-					<p><strong>Phòng ban:</strong> {viewingMajor.department?.name}</p>
-					<p><strong>Ngày tạo:</strong> {new Date(viewingMajor.createdAt).toLocaleString()}</p>
+		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+			<div class="animate-fade-in w-[500px] overflow-hidden rounded-xl bg-white shadow-xl">
+				<!-- Header -->
+				<div
+					class="flex items-center gap-4 border-b bg-gradient-to-r from-indigo-50 to-indigo-100 px-6 py-5"
+				>
+					<div
+						class="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-200 text-lg font-bold tracking-tight text-indigo-700"
+					>
+						{(viewingMajor.name?.[0] ?? 'N').toUpperCase()}
+					</div>
+					<div>
+						<h3 class="text-xl font-semibold text-gray-800">{viewingMajor.name}</h3>
+						<p class="text-sm text-gray-600">Mã ngành: {viewingMajor.code}</p>
+					</div>
 				</div>
-				<div class="mt-4 text-right">
+
+				<!-- Body -->
+				<div class="space-y-3 px-6 py-5 text-gray-700">
+					<div><b>ID:</b> {viewingMajor.id}</div>
+					<div>
+						<b>Phòng ban:</b>
+						{viewingMajor.department?.name} ({viewingMajor.department?.code})
+					</div>
+					<div><b>Ngày tạo:</b> {new Date(viewingMajor.createdAt).toLocaleString()}</div>
+					<div><b>Ngày cập nhật:</b> {new Date(viewingMajor.updatedAt).toLocaleString()}</div>
+				</div>
+
+				<!-- Footer -->
+				<div class="flex justify-end bg-gray-50 px-6 py-3">
 					<button
 						class="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300"
-						on:click={() => (viewingMajor = null)}>Đóng</button>
+						on:click={() => (viewingMajor = null)}
+					>
+						Đóng
+					</button>
 				</div>
 			</div>
 		</div>

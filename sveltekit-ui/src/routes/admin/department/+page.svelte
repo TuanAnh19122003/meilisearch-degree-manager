@@ -147,6 +147,7 @@
 			on:edit={(e) => handleEdit(e.detail)}
 			on:view={(e) => handleView(e.detail)}
 			on:delete={(e) => handleDelete(e.detail)}
+			on:pageSizeChange={(e) => fetchDepartments(1, e.detail)}
 			on:pageChange={(e) => fetchDepartments(e.detail, pagination.pageSize)}
 			on:viewModeChange={(e) => (viewMode = e.detail)}
 		/>
@@ -174,23 +175,52 @@
 
 	<!-- Modal View -->
 	{#if viewingDept}
-		<div class="fixed inset-0 flex items-center justify-center bg-black/40">
-			<div class="animate-fade-in w-[420px] rounded-lg bg-white p-6 shadow-lg">
-				<h3 class="mb-4 flex items-center gap-2 text-lg font-bold">
-					<Eye class="h-5 w-5 text-blue-600" /> Chi tiết phòng ban
-				</h3>
-				<div class="space-y-2 text-gray-700">
-					<p><strong>ID:</strong> {viewingDept.id}</p>
-					<p><strong>Tên phòng ban:</strong> {viewingDept.name}</p>
-					<p><strong>Mã:</strong> {viewingDept.code}</p>
-					<p><strong>Ngày tạo:</strong> {new Date(viewingDept.createdAt).toLocaleString()}</p>
-					<p><strong>Ngày cập nhật:</strong> {new Date(viewingDept.updatedAt).toLocaleString()}</p>
+		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+			<div class="animate-fade-in w-[480px] overflow-hidden rounded-xl bg-white shadow-xl">
+				<!-- Header -->
+				<div
+					class="flex items-center gap-4 border-b bg-gradient-to-r from-blue-50 to-blue-100 px-6 py-5"
+				>
+					<div
+						class="flex h-14 w-14 items-center justify-center rounded-full bg-blue-200 text-lg font-bold text-blue-700"
+					>
+						{viewingDept.name
+							? viewingDept.name
+									.split(' ')
+									.map((w) => w[0])
+									.join('')
+									.toUpperCase()
+							: 'PB'}
+					</div>
+					<div>
+						<h3 class="text-xl font-semibold text-gray-800">{viewingDept.name}</h3>
+						<p class="text-sm text-gray-600">
+							Mã phòng ban: <span class="font-medium">{viewingDept.code}</span>
+						</p>
+					</div>
 				</div>
-				<div class="mt-4 text-right">
+
+				<!-- Body -->
+				<div class="space-y-3 px-6 py-5 text-gray-700">
+					<div><b>ID:</b> {viewingDept.id}</div>
+					<div><b>Tên phòng ban:</b> {viewingDept.name}</div>
+					<div><b>Mã phòng ban:</b> {viewingDept.code}</div>
+				</div>
+
+				<!-- Footer -->
+				<div class="flex justify-between border-t px-6 py-4 text-sm text-gray-500">
+					<span>Ngày tạo: {new Date(viewingDept.createdAt).toLocaleString()}</span>
+					<span>Cập nhật: {new Date(viewingDept.updatedAt).toLocaleString()}</span>
+				</div>
+
+				<!-- Actions -->
+				<div class="bg-gray-50 px-6 py-3 text-right">
 					<button
 						class="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300"
-						on:click={() => (viewingDept = null)}>Đóng</button
+						on:click={() => (viewingDept = null)}
 					>
+						Đóng
+					</button>
 				</div>
 			</div>
 		</div>

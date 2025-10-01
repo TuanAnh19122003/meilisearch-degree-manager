@@ -96,25 +96,55 @@
 			{loading}
 			on:view={(e) => handleView(e.detail)}
 			on:delete={(e) => handleDelete(e.detail)}
+			on:pageSizeChange={(e) => fetchLogs(1, e.detail)}
 			on:pageChange={(e) => fetchLogs(e.detail, pagination.pageSize)}
 			on:viewModeChange={(e) => handleViewModeChange(e.detail)}
 		/>
 	{/if}
 
 	{#if viewingLog}
-		<div class="fixed inset-0 flex items-center justify-center bg-black/40">
-			<div class="w-[500px] rounded-lg bg-white p-6 shadow-lg">
-				<h3 class="mb-4 text-lg font-bold">Chi tiết Log</h3>
-				<div class="space-y-2">
-					<p><b>ID:</b> {viewingLog.id}</p>
-					<p><b>Người dùng:</b> {viewingLog.user?.firstname} {viewingLog.user?.lastname}</p>
-					<p><b>Hành động:</b> {viewingLog.action}</p>
-					<p><b>Target:</b> {viewingLog.target_type || '-'} #{viewingLog.target_id || '-'}</p>
-					<p><b>IP:</b> {viewingLog.ip_address || '-'}</p>
-					<p><b>Thời gian:</b> {new Date(viewingLog.createdAt).toLocaleString()}</p>
+		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+			<div class="animate-fade-in w-[520px] overflow-hidden rounded-xl bg-white shadow-xl">
+				<!-- Header -->
+				<div
+					class="flex items-center gap-4 border-b bg-gradient-to-r from-purple-50 to-purple-100 px-6 py-5"
+				>
+					<div
+						class="flex h-14 w-14 items-center justify-center rounded-full bg-purple-200 text-lg font-bold tracking-tight text-purple-700"
+					>
+						{(viewingLog.user?.firstname?.[0] ?? 'U').toUpperCase()}{(
+							viewingLog.user?.lastname?.[0] ?? ''
+						).toUpperCase()}
+					</div>
+					<div>
+						<h3 class="text-xl font-semibold text-gray-800">
+							{viewingLog.user?.firstname}
+							{viewingLog.user?.lastname}
+						</h3>
+						<p class="text-sm text-gray-600">{viewingLog.user?.email}</p>
+					</div>
 				</div>
-				<div class="mt-4 text-right">
-					<button class="rounded-lg bg-gray-200 px-4 py-2" on:click={() => (viewingLog = null)}>
+
+				<!-- Body -->
+				<div class="space-y-3 px-6 py-5 text-gray-700">
+					<div><b>ID Log:</b> {viewingLog.id}</div>
+					<div class="flex items-center gap-2">
+						<b>Hành động:</b>
+						<span class="rounded-full bg-blue-600 px-2 py-1 text-xs font-semibold text-white"
+							>{viewingLog.action}</span
+						>
+					</div>
+					<div><b>Target:</b> {viewingLog.target_type || '-'} #{viewingLog.target_id || '-'}</div>
+					<div><b>IP:</b> {viewingLog.ip_address || '-'}</div>
+					<div><b>Thời gian:</b> {new Date(viewingLog.createdAt).toLocaleString()}</div>
+				</div>
+
+				<!-- Footer -->
+				<div class="flex justify-end bg-gray-50 px-6 py-3">
+					<button
+						class="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300"
+						on:click={() => (viewingLog = null)}
+					>
 						Đóng
 					</button>
 				</div>

@@ -41,6 +41,8 @@
 			const { success, data, total, message } = res.data;
 			if (success) {
 				certificates = data;
+				console.log(data);
+
 				pagination = { ...pagination, current: page, total };
 			} else toast.error(message || 'Lỗi tải dữ liệu');
 		} catch (err) {
@@ -143,39 +145,78 @@
 			on:edit={(e) => handleEdit(e.detail)}
 			on:delete={(e) => handleDelete(e.detail)}
 			on:pageChange={(e) => fetchCertificates(e.detail)}
+			on:pageSizeChange={(e) => {
+				pagination.pageSize = e.detail;
+				fetchCertificates(1);
+			}}
 			on:view={(e) => (viewingItem = e.detail)}
 		/>
 	{/if}
 
 	{#if viewingItem}
-		<div class="fixed inset-0 flex items-center justify-center bg-black/40">
-			<div class="w-[500px] rounded-lg bg-white p-6 shadow-lg">
-				<h3 class="mb-4 text-lg font-bold">Chi tiết văn bằng</h3>
-				<p><b>ID:</b> {viewingItem.id}</p>
-				<p><b>Sinh viên:</b> {viewingItem.student?.lastname} {viewingItem.student?.firstname}</p>
-				<p><b>Loại:</b> {viewingItem.type}</p>
-				<p><b>Số hiệu:</b> {viewingItem.number}</p>
-				<p><b>Ngày tốt nghiệp:</b> {viewingItem.grad_date}</p>
-				<p>
-					<b>Trạng thái:</b>
-					<span
-						class={`inline-block px-2 py-1 text-xs font-semibold ${statusClass(viewingItem.status)}`}
-						>{viewingItem.status === 'issued'
-							? 'Đã cấp'
-							: viewingItem.status === 'revoked'
-								? 'Thu hồi'
-								: 'Bản nháp'}</span
+		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+			<div class="w-[520px] overflow-hidden rounded-xl bg-white shadow-xl">
+				<!-- Header -->
+				<div
+					class="flex items-center gap-4 border-b bg-gradient-to-r from-blue-50 to-blue-100 px-6 py-4"
+				>
+					<div
+						class="flex h-14 w-14 items-center justify-center rounded-full bg-blue-200 text-lg font-bold text-blue-700"
 					>
-				</p>
-				{#if viewingItem.file_url}<p>
-						<a href={viewingItem.file_url} target="_blank" class="text-sm text-blue-600 underline"
-							>Xem file</a
+						{`${(viewingItem.student?.lastname?.[0] ?? 'C').toUpperCase()}${(viewingItem.student?.firstname?.[0] ?? '').toUpperCase()}`}
+					</div>
+					<div>
+						<h3 class="text-xl font-semibold">
+							{viewingItem.student?.lastname}
+							{viewingItem.student?.firstname}
+						</h3>
+						<p class="text-sm text-gray-600">
+							Ngày sinh: {new Date(viewingItem.student?.dob).toLocaleDateString()}
+						</p>
+					</div>
+				</div>
+
+				<!-- Body -->
+				<div class="space-y-3 px-6 py-4 text-gray-700">
+					<div><b>Mã văn bằng:</b> {viewingItem.number}</div>
+					<div><b>Loại:</b> {viewingItem.type}</div>
+					<div><b>Ngày tốt nghiệp:</b> {new Date(viewingItem.grad_date).toLocaleDateString()}</div>
+					<div><b>Nơi cấp:</b> {viewingItem.issuer}</div>
+					<div>
+						<b>Trạng thái:</b>
+						<span
+							class={`rounded-full px-2 py-1 text-xs font-semibold ${statusClass(viewingItem.status)}`}
 						>
-					</p>{/if}
-				<div class="mt-4 text-right">
-					<button class="rounded-lg bg-gray-200 px-4 py-2" on:click={() => (viewingItem = null)}
-						>Đóng</button
+							{viewingItem.status === 'issued'
+								? 'Đã cấp'
+								: viewingItem.status === 'revoked'
+									? 'Thu hồi'
+									: 'Bản nháp'}
+						</span>
+					</div>
+					{#if viewingItem.file_url}
+						<div>
+							<b>File:</b>
+							<a href={viewingItem.file_url} target="_blank" class="text-blue-600 underline"
+								>Xem / tải về</a
+							>
+						</div>
+					{/if}
+				</div>
+
+				<!-- Footer -->
+				<div class="flex justify-between border-t px-6 py-4 text-sm text-gray-500">
+					<span>Ngày tạo: {new Date(viewingItem.createdAt).toLocaleString()}</span>
+					<span>Cập nhật: {new Date(viewingItem.updatedAt).toLocaleString()}</span>
+				</div>
+
+				<div class="bg-gray-50 px-6 py-3 text-right">
+					<button
+						class="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300"
+						on:click={() => (viewingItem = null)}
 					>
+						Đóng
+					</button>
 				</div>
 			</div>
 		</div>

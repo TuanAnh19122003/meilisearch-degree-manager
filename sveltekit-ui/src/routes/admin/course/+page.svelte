@@ -136,6 +136,7 @@
 			on:edit={(e) => handleEdit(e.detail)}
 			on:view={(e) => handleView(e.detail)}
 			on:delete={(e) => handleDelete(e.detail)}
+			on:pageSizeChange={(e) => fetchCourses(1, e.detail)}
 			on:pageChange={(e) => fetchCourses(e.detail, pagination.pageSize)}
 			on:viewModeChange={(e) => (viewMode = e.detail)}
 		/>
@@ -163,27 +164,43 @@
 
 	<!-- Modal View -->
 	{#if viewingCourse}
-		<div class="fixed inset-0 flex items-center justify-center bg-black/40">
-			<div class="animate-fade-in w-[420px] rounded-lg bg-white p-6 shadow-lg">
-				<h3 class="mb-4 flex items-center gap-2 text-lg font-bold">
-					<Eye class="h-5 w-5 text-blue-600" /> Chi tiết môn học
-				</h3>
-				<div class="space-y-2 text-gray-700">
-					<p><strong>ID:</strong> {viewingCourse.id}</p>
-					<p><strong>Mã môn học:</strong> {viewingCourse.code}</p>
-					<p><strong>Tên môn học:</strong> {viewingCourse.name}</p>
-					<p><strong>Số tín chỉ:</strong> {viewingCourse.credit}</p>
-					<p><strong>Ngày tạo:</strong> {new Date(viewingCourse.createdAt).toLocaleString()}</p>
-					<p>
-						<strong>Ngày cập nhật:</strong>
-						{new Date(viewingCourse.updatedAt).toLocaleString()}
-					</p>
+		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+			<div class="animate-fade-in w-[480px] overflow-hidden rounded-xl bg-white shadow-xl">
+				<!-- Header -->
+				<div
+					class="flex items-center gap-3 border-b bg-gradient-to-r from-indigo-50 to-indigo-100 px-6 py-4"
+				>
+					<div class="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-200">
+						<Eye class="h-6 w-6 text-indigo-700" />
+					</div>
+					<div>
+						<h3 class="text-xl font-semibold text-gray-800">{viewingCourse.name}</h3>
+						<p class="text-sm text-gray-600">
+							Mã môn học: <span class="font-medium">{viewingCourse.code}</span>
+						</p>
+					</div>
 				</div>
-				<div class="mt-4 text-right">
+
+				<!-- Body -->
+				<div class="space-y-3 px-6 py-4 text-gray-700">
+					<div><b>ID:</b> {viewingCourse.id}</div>
+					<div><b>Số tín chỉ:</b> {viewingCourse.credit}</div>
+				</div>
+
+				<!-- Footer -->
+				<div class="flex justify-between border-t px-6 py-4 text-sm text-gray-500">
+					<span>Ngày tạo: {new Date(viewingCourse.createdAt).toLocaleString()}</span>
+					<span>Cập nhật: {new Date(viewingCourse.updatedAt).toLocaleString()}</span>
+				</div>
+
+				<!-- Actions -->
+				<div class="bg-gray-50 px-6 py-3 text-right">
 					<button
 						class="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300"
-						on:click={() => (viewingCourse = null)}>Đóng</button
+						on:click={() => (viewingCourse = null)}
 					>
+						Đóng
+					</button>
 				</div>
 			</div>
 		</div>

@@ -145,6 +145,7 @@
 			on:edit={(e) => handleEdit(e.detail)}
 			on:view={(e) => handleView(e.detail)}
 			on:delete={(e) => handleDelete(e.detail)}
+			on:pageSizeChange={(e) => fetchRoles(1, e.detail)}
 			on:pageChange={(e) => fetchRoles(e.detail, pagination.pageSize)}
 			on:viewModeChange={(e) => (viewMode = e.detail)}
 		/>
@@ -172,23 +173,38 @@
 
 	<!-- Modal View -->
 	{#if viewingRole}
-		<div class="fixed inset-0 flex items-center justify-center bg-black/40">
-			<div class="animate-fade-in w-[420px] rounded-lg bg-white p-6 shadow-lg">
-				<h3 class="mb-4 flex items-center gap-2 text-lg font-bold">
-					<Eye class="h-5 w-5 text-blue-600" /> Chi tiết vai trò
-				</h3>
-				<div class="space-y-2 text-gray-700">
-					<p><strong>ID:</strong> {viewingRole.id}</p>
-					<p><strong>Tên vai trò:</strong> {viewingRole.name}</p>
-					<p><strong>Mã:</strong> {viewingRole.code}</p>
-					<p><strong>Ngày tạo:</strong> {new Date(viewingRole.createdAt).toLocaleString()}</p>
-					<p><strong>Ngày cập nhật:</strong> {new Date(viewingRole.updatedAt).toLocaleString()}</p>
+		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+			<div class="animate-fade-in w-[480px] overflow-hidden rounded-xl bg-white shadow-xl">
+				<!-- Header -->
+				<div
+					class="flex items-center gap-4 border-b bg-gradient-to-r from-purple-50 to-purple-100 px-6 py-5"
+				>
+					<div
+						class="flex h-14 w-14 items-center justify-center rounded-full bg-purple-200 text-lg font-bold tracking-tight text-purple-700"
+					>
+						{(viewingRole.name?.[0] ?? 'R').toUpperCase()}
+					</div>
+					<div>
+						<h3 class="text-xl font-semibold text-gray-800">{viewingRole.name}</h3>
+						<p class="text-sm text-gray-600">Mã: {viewingRole.code}</p>
+					</div>
 				</div>
-				<div class="mt-4 text-right">
+
+				<!-- Body -->
+				<div class="space-y-3 px-6 py-5 text-gray-700">
+					<div><b>ID:</b> {viewingRole.id}</div>
+					<div><b>Ngày tạo:</b> {new Date(viewingRole.createdAt).toLocaleString()}</div>
+					<div><b>Ngày cập nhật:</b> {new Date(viewingRole.updatedAt).toLocaleString()}</div>
+				</div>
+
+				<!-- Footer -->
+				<div class="flex justify-end bg-gray-50 px-6 py-3">
 					<button
 						class="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300"
-						on:click={() => (viewingRole = null)}>Đóng</button
+						on:click={() => (viewingRole = null)}
 					>
+						Đóng
+					</button>
 				</div>
 			</div>
 		</div>

@@ -144,6 +144,7 @@
 			on:edit={(e) => handleEdit(e.detail)}
 			on:view={(e) => handleView(e.detail)}
 			on:delete={(e) => handleDelete(e.detail)}
+			on:pageSizeChange={(e) => fetchGrades(1, e.detail)}
 			on:pageChange={(e) => fetchGrades(e.detail, pagination.pageSize)}
 			on:viewModeChange={(e) => (viewMode = e.detail)}
 		/>
@@ -171,24 +172,62 @@
 
 	<!-- Modal View -->
 	{#if viewingGrade}
-		<div class="fixed inset-0 flex items-center justify-center bg-black/40">
-			<div class="animate-fade-in w-[420px] rounded-lg bg-white p-6 shadow-lg">
-				<h3 class="mb-4 flex items-center gap-2 text-lg font-bold">
-					<Eye class="h-5 w-5 text-blue-600" /> Chi tiết điểm
-				</h3>
-				<div class="space-y-2 text-gray-700">
-					<p><strong>ID:</strong> {viewingGrade.id}</p>
-					<p><strong>Sinh viên:</strong> {viewingGrade.student?.name}</p>
-					<p><strong>Môn học:</strong> {viewingGrade.course?.name}</p>
-					<p><strong>Điểm:</strong> {viewingGrade.grade}</p>
-					<p><strong>Ngày tạo:</strong> {new Date(viewingGrade.createdAt).toLocaleString()}</p>
-					<p><strong>Ngày cập nhật:</strong> {new Date(viewingGrade.updatedAt).toLocaleString()}</p>
+		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+			<div class="animate-fade-in w-[480px] overflow-hidden rounded-xl bg-white shadow-xl">
+				<!-- Header -->
+				<div
+					class="flex items-center gap-4 border-b bg-gradient-to-r from-green-50 to-green-100 px-6 py-5"
+				>
+					<div
+						class="flex h-14 w-14 items-center justify-center rounded-full bg-green-200 text-lg font-bold tracking-tight text-green-700"
+					>
+						{(viewingGrade.student?.lastname?.[0] ?? 'S').toUpperCase()}{(
+							viewingGrade.student?.firstname?.[0] ?? ''
+						).toUpperCase()}
+					</div>
+					<div>
+						<h3 class="text-xl font-semibold text-gray-800">
+							{viewingGrade.student?.lastname}
+							{viewingGrade.student?.firstname}
+						</h3>
+						<p class="text-sm text-gray-600">ID: {viewingGrade.student?.code}</p>
+					</div>
 				</div>
-				<div class="mt-4 text-right">
+
+				<!-- Body -->
+				<div class="space-y-3 px-6 py-5 text-gray-700">
+					<div><b>Mã môn học:</b> {viewingGrade.id}</div>
+					<div><b>Môn học:</b> {viewingGrade.course?.name}</div>
+					<div class="flex items-center gap-2">
+						<b>Điểm:</b>
+						<span
+							class={`rounded-full px-2 py-1 text-xs font-semibold ${
+								parseFloat(viewingGrade.grade) >= 8
+									? 'bg-green-100 text-green-700'
+									: parseFloat(viewingGrade.grade) >= 5
+										? 'bg-yellow-100 text-yellow-700'
+										: 'bg-red-100 text-red-700'
+							}`}
+						>
+							{viewingGrade.grade}
+						</span>
+					</div>
+				</div>
+
+				<!-- Footer -->
+				<div class="flex justify-between border-t px-6 py-4 text-sm text-gray-500">
+					<span>Ngày tạo: {new Date(viewingGrade.createdAt).toLocaleString()}</span>
+					<span>Cập nhật: {new Date(viewingGrade.updatedAt).toLocaleString()}</span>
+				</div>
+
+				<!-- Actions -->
+				<div class="bg-gray-50 px-6 py-3 text-right">
 					<button
 						class="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300"
-						on:click={() => (viewingGrade = null)}>Đóng</button
+						on:click={() => (viewingGrade = null)}
 					>
+						Đóng
+					</button>
 				</div>
 			</div>
 		</div>

@@ -155,6 +155,7 @@
 			on:view={(e) => handleView(e.detail)}
 			on:delete={(e) => handleDelete(e.detail)}
 			on:pageChange={(e) => fetchStudents(e.detail, pagination.pageSize)}
+			on:pageSizeChange={(e) => fetchStudents(1, e.detail)}
 			on:viewModeChange={(e) => (viewMode = e.detail)}
 		/>
 	{/if}
@@ -170,20 +171,53 @@
 	{/if}
 
 	{#if viewingStudent}
-		<div class="fixed inset-0 flex items-center justify-center bg-black/40">
-			<div class="w-[420px] rounded-lg bg-white p-6 shadow-lg">
-				<h3 class="mb-4 flex items-center gap-2 text-lg font-bold">
-					<Eye class="h-5 w-5 text-blue-600" /> Chi tiết sinh viên
-				</h3>
-				<p><strong>Mã:</strong> {viewingStudent.code}</p>
-				<p><strong>Họ tên:</strong> {viewingStudent.lastname} {viewingStudent.firstname}</p>
-				<p><strong>Email:</strong> {viewingStudent.email}</p>
-				<p><strong>Phone:</strong> {viewingStudent.phone}</p>
-				<p><strong>Ngày sinh:</strong> {viewingStudent.dob}</p>
-				<p><strong>Địa chỉ:</strong> {viewingStudent.address}</p>
-				<p><strong>Ngày tạo:</strong> {new Date(viewingStudent.createdAt).toLocaleString()}</p>
-				<p><strong>Ngày cập nhật:</strong> {new Date(viewingStudent.updatedAt).toLocaleString()}</p>
-				<div class="mt-4 text-right">
+		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+			<div class="animate-fade-in w-[480px] overflow-hidden rounded-xl bg-white shadow-xl">
+				<!-- Header -->
+				<div
+					class="flex items-center gap-4 border-b bg-gradient-to-r from-blue-50 to-blue-100 px-6 py-5"
+				>
+					<div
+						class="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-blue-200 text-xl font-bold tracking-tight text-blue-700"
+					>
+						{#if viewingStudent.image}
+							<img
+								src={`http://localhost:5000/${viewingStudent.image}`}
+								alt="Avatar"
+								class="h-full w-full object-cover"
+							/>
+						{:else}
+							{(viewingStudent.firstname?.[0] ?? 'S').toUpperCase()}{(
+								viewingStudent.lastname?.[0] ?? ''
+							).toUpperCase()}
+						{/if}
+					</div>
+					<div>
+						<h3 class="text-xl font-semibold text-gray-800">
+							{viewingStudent.firstname}
+							{viewingStudent.lastname}
+						</h3>
+						<p class="text-sm text-gray-600">Mã sinh viên: {viewingStudent.code}</p>
+					</div>
+				</div>
+
+				<!-- Body -->
+				<div class="space-y-3 px-6 py-5 text-gray-700">
+					<p><b>Email:</b> {viewingStudent.email}</p>
+					<p><b>Phone:</b> {viewingStudent.phone}</p>
+					<p><b>Ngày sinh:</b> {viewingStudent.dob}</p>
+					<p><b>Địa chỉ:</b> {viewingStudent.address ?? '-'}</p>
+					<p><b>GPA:</b> {viewingStudent.gpa ?? 'Chưa có'}</p>
+				</div>
+
+				<!-- Footer -->
+				<div class="flex justify-between border-t px-6 py-4 text-sm text-gray-500">
+					<span>Ngày tạo: {new Date(viewingStudent.createdAt).toLocaleString()}</span>
+					<span>Cập nhật: {new Date(viewingStudent.updatedAt).toLocaleString()}</span>
+				</div>
+
+				<!-- Actions -->
+				<div class="bg-gray-50 px-6 py-3 text-right">
 					<button
 						class="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300"
 						on:click={() => (viewingStudent = null)}>Đóng</button

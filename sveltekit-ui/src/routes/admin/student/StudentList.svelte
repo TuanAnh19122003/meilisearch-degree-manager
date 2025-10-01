@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { createEventDispatcher, onMount } from 'svelte';
-	import { Eye, Pencil, Trash2, MoreVertical, ChevronLeft, ChevronRight } from 'lucide-svelte';
+	import { MoreVertical } from 'lucide-svelte';
+	import Pagination from '$lib/Pagination.svelte';
+	import ActionMenu from '$lib/ActionMenu.svelte';
 
 	export let data = [];
 	export let pagination = { current: 1, pageSize: 6, total: 0 };
@@ -51,21 +53,11 @@
 		dispatch('viewModeChange', e.target.checked ? 'card' : 'list');
 	}
 
-	$: totalPages = Math.ceil(pagination.total / pagination.pageSize);
-
-	function getPagesToShow(current, total) {
-		const delta = 2;
-		const pages = [];
-		for (let i = 1; i <= total; i++)
-			if (i === 1 || i === total || (i >= current - delta && i <= current + delta)) pages.push(i);
-		const result = [];
-		let last = 0;
-		for (const page of pages) {
-			if (page - last > 1) result.push('...');
-			result.push(page);
-			last = page;
-		}
-		return result;
+	function getInitials(lastname: string, firstname: string) {
+		if (!lastname && !firstname) return '?';
+		const last = lastname ? lastname.charAt(0).toUpperCase() : '';
+		const first = firstname ? firstname.charAt(0).toUpperCase() : '';
+		return last + first;
 	}
 </script>
 
@@ -89,6 +81,7 @@
 </div>
 
 {#if viewMode === 'list'}
+	<!-- LIST VIEW TABLE -->
 	<table class="w-full border-collapse overflow-hidden rounded-xl bg-white text-sm shadow">
 		<thead class="bg-gray-50 text-gray-700">
 			<tr>
@@ -129,12 +122,19 @@
 	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 		{#each data as item}
 			<div class="relative flex items-center gap-3 rounded-xl bg-white p-4 shadow-md">
-				<!-- Ảnh sinh viên -->
-				<img
-					src={item.image ? `http://localhost:5000/${item.image}` : '/default-avatar.png'}
-					alt="Avatar"
-					class="h-12 w-12 rounded-full object-cover"
-				/>
+				{#if item.image}
+					<img
+						src={`http://localhost:5000/${item.image}`}
+						alt="Avatar"
+						class="h-12 w-12 rounded-full object-cover"
+					/>
+				{:else}
+					<div
+						class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-300 text-sm font-semibold text-white"
+					>
+						{getInitials(item.lastname, item.firstname)}
+					</div>
+				{/if}
 				<div class="flex-1">
 					<h3 class="text-base font-semibold">{item.lastname} {item.firstname}</h3>
 					<p class="text-sm text-gray-500">{item.email}</p>
@@ -154,55 +154,21 @@
 	</div>
 {/if}
 
-{#if openMenuId && currentItem}
-	<div
-		class="absolute z-10 w-32 rounded-lg border border-gray-200 bg-white shadow-lg"
-		style="top:{menuPos.top}px; left:{menuPos.left}px;"
-	>
-		<button
-			class="flex w-full items-center gap-2 px-4 py-2 hover:bg-gray-50"
-			on:click={() => handleView(currentItem)}><Eye class="h-4 w-4" /> Xem</button
-		>
-		<button
-			class="flex w-full items-center gap-2 px-4 py-2 hover:bg-gray-50"
-			on:click={() => handleEdit(currentItem)}><Pencil class="h-4 w-4" /> Sửa</button
-		>
-		<button
-			class="flex w-full items-center gap-2 px-4 py-2 text-red-600 hover:bg-gray-50"
-			on:click={() => handleDelete(currentItem.id)}><Trash2 class="h-4 w-4" /> Xóa</button
-		>
-	</div>
-{/if}
+<!-- Dropdown menu -->
+<ActionMenu
+	open={!!openMenuId}
+	position={menuPos}
+	item={currentItem}
+	on:view={e => handleView(e.detail)}
+	on:edit={e => handleEdit(e.detail)}
+	on:delete={e => handleDelete(e.detail)}
+/>
 
 <!-- Pagination -->
-<div class="mt-6 flex items-center justify-between text-sm">
-	<span class="text-gray-600">Trang {pagination.current} / {totalPages > 0 ? totalPages : 1}</span>
-	<div class="flex items-center gap-1">
-		<button
-			class="flex items-center rounded-full border border-gray-300 px-3 py-1.5 hover:bg-gray-100 disabled:opacity-50"
-			on:click={() => dispatch('pageChange', pagination.current - 1)}
-			disabled={pagination.current <= 1}
-		>
-			<ChevronLeft class="h-4 w-4" />
-		</button>
-		{#each getPagesToShow(pagination.current, totalPages) as page}
-			{#if page === '...'}
-				<span class="px-2 text-gray-400">...</span>
-			{:else}
-				<button
-					class={`rounded-full border px-3 py-1.5 ${pagination.current === page ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300 hover:bg-gray-100'}`}
-					on:click={() => dispatch('pageChange', page)}
-				>
-					{page}
-				</button>
-			{/if}
-		{/each}
-		<button
-			class="flex items-center rounded-full border border-gray-300 px-3 py-1.5 hover:bg-gray-100 disabled:opacity-50"
-			on:click={() => dispatch('pageChange', pagination.current + 1)}
-			disabled={pagination.current >= totalPages}
-		>
-			<ChevronRight class="h-4 w-4" />
-		</button>
-	</div>
-</div>
+<Pagination
+	current={pagination.current}
+	pageSize={pagination.pageSize}
+	total={pagination.total}
+	on:pageChange={(e) => dispatch('pageChange', e.detail)}
+	on:pageSizeChange={(e) => dispatch('pageSizeChange', e.detail)}
+/>

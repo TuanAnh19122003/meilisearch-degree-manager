@@ -127,11 +127,12 @@
 		<UserList
 			data={users}
 			{pagination}
-			{viewMode} 
+			{viewMode}
 			on:viewModeChange={(e) => handleViewModeChange(e.detail)}
 			on:edit={(e) => handleEdit(e.detail)}
 			on:view={(e) => handleView(e.detail)}
 			on:delete={(e) => handleDelete(e.detail)}
+			on:pageSizeChange={(e) => fetchUsers(1, e.detail)}
 			on:pageChange={(e) => fetchUsers(e.detail, pagination.pageSize)}
 		/>
 	{/if}
@@ -152,28 +153,56 @@
 	{/if}
 
 	{#if viewingUser}
-		<div class="fixed inset-0 flex items-center justify-center bg-black/40">
-			<div class="w-[500px] rounded-lg bg-white p-6 shadow-lg">
-				<h3 class="mb-4 text-lg font-bold">Chi tiết người dùng</h3>
-				<div class="space-y-2">
-					<p><b>ID:</b> {viewingUser.id}</p>
-					<p><b>Họ tên:</b> {viewingUser.firstname} {viewingUser.lastname}</p>
-					<p><b>Email:</b> {viewingUser.email}</p>
-					<p><b>Số điện thoại:</b> {viewingUser.phone}</p>
-					<p><b>Vai trò:</b> {viewingUser.role?.name}</p>
-					<p><b>Trạng thái:</b> {viewingUser.is_active ? 'Hoạt động' : 'Khóa'}</p>
-					{#if viewingUser.image}
-						<img
-							src={`http://localhost:5000/${viewingUser.image}`}
-							alt="Ảnh người dùng"
-							class="h-24 w-24 rounded-full object-cover"
-						/>
-					{/if}
+		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+			<div class="animate-fade-in w-[480px] overflow-hidden rounded-xl bg-white shadow-xl">
+				<!-- Header -->
+				<div
+					class="flex items-center gap-4 border-b bg-gradient-to-r from-purple-50 to-purple-100 px-6 py-5"
+				>
+					<div
+						class="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-purple-200 text-xl font-bold tracking-tight text-purple-700"
+					>
+						{#if viewingUser.image}
+							<img
+								src={`http://localhost:5000/${viewingUser.image}`}
+								alt="Avatar"
+								class="h-full w-full object-cover"
+							/>
+						{:else}
+							{(viewingUser.firstname?.[0] ?? 'U').toUpperCase()}{(
+								viewingUser.lastname?.[0] ?? ''
+							).toUpperCase()}
+						{/if}
+					</div>
+					<div>
+						<h3 class="text-xl font-semibold text-gray-800">
+							{viewingUser.firstname}
+							{viewingUser.lastname}
+						</h3>
+						<p class="text-sm text-gray-600">ID: {viewingUser.id}</p>
+					</div>
 				</div>
-				<div class="mt-4 text-right">
-					<button class="rounded-lg bg-gray-200 px-4 py-2" on:click={() => (viewingUser = null)}>
-						Đóng
-					</button>
+
+				<!-- Body -->
+				<div class="space-y-3 px-6 py-5 text-gray-700">
+					<p><b>Email:</b> {viewingUser.email}</p>
+					<p><b>Số điện thoại:</b> {viewingUser.phone ?? '-'}</p>
+					<p><b>Vai trò:</b> {viewingUser.role?.name ?? '-'}</p>
+					<p><b>Trạng thái:</b> {viewingUser.is_active ? 'Hoạt động' : 'Khóa'}</p>
+				</div>
+
+				<!-- Footer -->
+				<div class="flex justify-between border-t px-6 py-4 text-sm text-gray-500">
+					<span>Ngày tạo: {new Date(viewingUser.createdAt).toLocaleString()}</span>
+					<span>Cập nhật: {new Date(viewingUser.updatedAt).toLocaleString()}</span>
+				</div>
+
+				<!-- Actions -->
+				<div class="bg-gray-50 px-6 py-3 text-right">
+					<button
+						class="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300"
+						on:click={() => (viewingUser = null)}>Đóng</button
+					>
 				</div>
 			</div>
 		</div>

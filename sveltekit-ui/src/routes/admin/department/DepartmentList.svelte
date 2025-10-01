@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { createEventDispatcher, onMount } from 'svelte';
-	import { Eye, Pencil, Trash2, MoreVertical, ChevronLeft, ChevronRight } from 'lucide-svelte';
+	import { MoreVertical } from 'lucide-svelte';
+	import ActionMenu from '$lib/ActionMenu.svelte';
+	import Pagination from '$lib/Pagination.svelte';
 
 	export let data = [];
 	export let pagination = { current: 1, pageSize: 6, total: 0 };
@@ -50,21 +52,6 @@
 		dispatch('viewModeChange', e.target.checked ? 'card' : 'list');
 	}
 
-	$: totalPages = Math.ceil(pagination.total / pagination.pageSize);
-	function getPagesToShow(current, total) {
-		const delta = 2;
-		const pages = [];
-		for (let i = 1; i <= total; i++)
-			if (i === 1 || i === total || (i >= current - delta && i <= current + delta)) pages.push(i);
-		const result = [];
-		let last = 0;
-		for (const page of pages) {
-			if (page - last > 1) result.push('...');
-			result.push(page);
-			last = page;
-		}
-		return result;
-	}
 </script>
 
 <!-- View Toggle -->
@@ -145,61 +132,20 @@
 {/if}
 
 <!-- Dropdown menu -->
-{#if openMenuId && currentItem}
-	<div
-		class="fixed z-50 w-32 rounded-lg bg-white shadow-md"
-		style="top:{menuPos.top}px; left:{menuPos.left}px"
-	>
-		<button
-			class="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-gray-100"
-			on:click={() => handleView(currentItem)}
-		>
-			<Eye class="h-4 w-4 text-gray-600" /> Xem
-		</button>
-		<button
-			class="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-gray-100"
-			on:click={() => handleEdit(currentItem)}
-		>
-			<Pencil class="h-4 w-4 text-blue-600" /> Sửa
-		</button>
-		<button
-			class="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-gray-100"
-			on:click={() => handleDelete(currentItem.id)}
-		>
-			<Trash2 class="h-4 w-4" /> Xóa
-		</button>
-	</div>
-{/if}
+<ActionMenu
+	open={!!openMenuId}
+	position={menuPos}
+	item={currentItem}
+	on:view={(e) => handleView(e.detail)}
+	on:edit={(e) => handleEdit(e.detail)}
+	on:delete={(e) => handleDelete(e.detail)}
+/>
 
 <!-- Pagination -->
-<div class="mt-6 flex items-center justify-between text-sm">
-	<span class="text-gray-600">Trang {pagination.current} / {totalPages}</span>
-	<div class="flex items-center gap-1">
-		<button
-			class="flex items-center rounded-full border border-gray-300 px-3 py-1.5 hover:bg-gray-100 disabled:opacity-50"
-			on:click={() => dispatch('pageChange', pagination.current - 1)}
-			disabled={pagination.current <= 1}
-		>
-			<ChevronLeft class="h-4 w-4" />
-		</button>
-		{#each getPagesToShow(pagination.current, totalPages) as page}
-			{#if page === '...'}
-				<span class="px-2 text-gray-400">...</span>
-			{:else}
-				<button
-					class={`rounded-full border px-3 py-1.5 ${pagination.current === page ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300 hover:bg-gray-100'}`}
-					on:click={() => dispatch('pageChange', page)}
-				>
-					{page}
-				</button>
-			{/if}
-		{/each}
-		<button
-			class="flex items-center rounded-full border border-gray-300 px-3 py-1.5 hover:bg-gray-100 disabled:opacity-50"
-			on:click={() => dispatch('pageChange', pagination.current + 1)}
-			disabled={pagination.current >= totalPages}
-		>
-			<ChevronRight class="h-4 w-4" />
-		</button>
-	</div>
-</div>
+<Pagination
+	current={pagination.current}
+	pageSize={pagination.pageSize}
+	total={pagination.total}
+	on:pageChange={(e) => dispatch('pageChange', e.detail)}
+	on:pageSizeChange={(e) => dispatch('pageSizeChange', e.detail)}
+/>
