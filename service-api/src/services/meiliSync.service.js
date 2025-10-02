@@ -8,7 +8,7 @@ const { roleIndex, userIndex, studentIndex, certificateIndex } = require('../con
 
 async function syncTable(model, index, fields, extraMapper = null) {
     // Xóa toàn bộ dữ liệu cũ
-    await index.deleteAllDocuments();
+    // await index.deleteAllDocuments();
 
     const data = await model.findAll({
         include: model === Certificate ? [

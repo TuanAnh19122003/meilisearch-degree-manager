@@ -3,6 +3,7 @@ const User = require('../models/user.model');
 const Role = require('../models/role.model');
 const path = require('path');
 const fs = require('fs');
+const { userIndex } = require('../config/meili.client');
 
 class UserService {
     static async findAll({ offset = 0, limit = 20 } = {}) {
@@ -27,9 +28,23 @@ class UserService {
         if (file) data.image = `uploads/${file.filename}`;
 
         const user = await User.create(data);
-        return await User.findByPk(user.id, {
+        const userWithRole = await User.findByPk(user.id, {
             include: { model: Role, as: 'role', attributes: ['id', 'name', 'code'] }
         });
+
+        // Đồng bộ lên Meilisearch
+        await userIndex.addDocuments([{
+            id: userWithRole.id,
+            firstname: userWithRole.firstname,
+            lastname: userWithRole.lastname,
+            email: userWithRole.email,
+            phone: userWithRole.phone,
+            is_active: userWithRole.is_active,
+            image: userWithRole.image,
+            role: userWithRole.role ? { id: userWithRole.role.id, name: userWithRole.role.name, code: userWithRole.role.code } : null
+        }]);
+
+        return userWithRole;
     }
 
     static async update(id, data, file) {
@@ -40,20 +55,45 @@ class UserService {
         else delete data.password;
 
         if (file) {
-            if (user.image) fs.existsSync(user.image) && fs.unlinkSync(path.join(__dirname, '..', user.image));
+            if (user.image) {
+                const oldImagePath = path.join(__dirname, '..', user.image);
+                if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
+            }
             data.image = `uploads/${file.filename}`;
         }
 
-        await user.update(data);
-        return await User.findByPk(user.id, { include: { model: Role, as: 'role' } });
+        const updated = await user.update(data);
+
+        // Đồng bộ lại Meilisearch
+        await userIndex.updateDocuments([{
+            id: updated.id,
+            firstname: updated.firstname,
+            lastname: updated.lastname,
+            email: updated.email,
+            phone: updated.phone,
+            is_active: updated.is_active,
+            image: updated.image,
+            role: updated.role ? { id: updated.role.id, name: updated.role.name, code: updated.role.code } : null
+        }]);
+
+        return await User.findByPk(id, { include: { model: Role, as: 'role' } });
     }
 
     static async delete(id) {
         const user = await User.findByPk(id);
         if (!user) return 0;
 
-        if (user.image) fs.existsSync(user.image) && fs.unlinkSync(path.join(__dirname, '..', user.image));
-        return await User.destroy({ where: { id } });
+        // Xóa ảnh nếu có
+        if (user.image) {
+            const imagePath = path.join(__dirname, '..', user.image);
+            if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
+        }
+
+        const deletedCount = await User.destroy({ where: { id } });
+
+        if (deletedCount > 0) await userIndex.deleteDocument(id);
+
+        return deletedCount;
     }
 }
 

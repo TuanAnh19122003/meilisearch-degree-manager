@@ -1,5 +1,7 @@
 const Certificate = require('../models/certificate.model');
 const { Sequelize } = require('sequelize');
+const { certificateIndex } = require('../config/meili.client');
+const Student = require('../models/student.model');
 
 class CertificateService {
     static async findAll(options = {}) {
@@ -29,7 +31,7 @@ class CertificateService {
                 {
                     model: require('../models/student.model'),
                     as: 'student',
-                    attributes: ['id', 'lastname', 'firstname','code']
+                    attributes: ['id', 'lastname', 'firstname', 'code']
                 }
             ]
         });
@@ -38,13 +40,43 @@ class CertificateService {
     }
 
     static async create(data) {
-        return await Certificate.create(data);
+        const cert = await Certificate.create(data);
+        const student = cert.studentId ? await Student.findByPk(cert.studentId) : null;
+
+        await certificateIndex.addDocuments([{
+            id: cert.id,
+            number: cert.number,
+            type: cert.type,
+            grad_date: cert.grad_date,
+            issuer: cert.issuer,
+            status: cert.status,
+            file_url: cert.file_url,
+            student: student ? { id: student.id, code: student.code, firstname: student.firstname, lastname: student.lastname } : null
+        }]);
+
+        return cert;
     }
 
+    // Trong update
     static async update(id, data) {
-        const certificate = await Certificate.findOne({ where: { id } });
-        if (!certificate) throw new Error("Không tìm thấy certificate");
-        return await certificate.update(data);
+        const cert = await Certificate.findOne({ where: { id } });
+        if (!cert) throw new Error("Không tìm thấy certificate");
+
+        const updated = await cert.update(data);
+        const student = updated.studentId ? await Student.findByPk(updated.studentId) : null;
+
+        await certificateIndex.updateDocuments([{
+            id: updated.id,
+            number: updated.number,
+            type: updated.type,
+            grad_date: updated.grad_date,
+            issuer: updated.issuer,
+            status: updated.status,
+            file_url: updated.file_url,
+            student: student ? { id: student.id, code: student.code, firstname: student.firstname, lastname: student.lastname } : null
+        }]);
+
+        return updated;
     }
 
     static async delete(id) {

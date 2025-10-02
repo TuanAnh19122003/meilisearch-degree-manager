@@ -48,7 +48,7 @@
 	}
 </script>
 
-<div class="space-y-4">
+<div class="space-y-4 p-6 bg-white rounded-xl shadow-lg w-full max-w-md">
 	<div>
 		<label for="" class="mb-1 block text-sm font-medium">Sinh viên</label>
 		<select bind:value={form.studentId} class="w-full rounded border px-3 py-2">
@@ -90,16 +90,11 @@
 
 	<div>
 		<label for="" class="mb-1 block text-sm font-medium">File URL</label>
-		<input
-			type="text"
-			placeholder="Nhập đường dẫn file"
-			bind:value={form.file_url}
-			class="w-full rounded border px-3 py-2"
-		/>
+		<input type="text" placeholder="Nhập đường dẫn file" bind:value={form.file_url} class="w-full rounded border px-3 py-2" />
 	</div>
 
-	<div class="flex justify-end gap-2">
-		<button class="rounded bg-gray-200 px-4 py-2" on:click={handleCancel}>Hủy</button>
-		<button class="rounded bg-blue-600 px-4 py-2 text-white" on:click={handleSubmit}>Lưu</button>
+	<div class="flex justify-end gap-3 pt-4">
+		<button class="rounded bg-gray-200 px-4 py-2 hover:bg-gray-300" on:click={handleCancel}>Hủy</button>
+		<button class="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700" on:click={handleSubmit}>Lưu</button>
 	</div>
 </div>
