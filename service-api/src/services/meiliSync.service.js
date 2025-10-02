@@ -6,7 +6,8 @@ const StudentGpaService = require('../services/studentGpa.service');
 const Certificate = require('../models/certificate.model');
 const Course = require('../models/course.model');
 
-const { roleIndex, userIndex, studentIndex, certificateIndex, courseIndex } = require('../config/meili.client');
+const { roleIndex, userIndex, studentIndex, certificateIndex, courseIndex, departmentIndex } = require('../config/meili.client');
+const Department = require('../models/department.model');
 
 async function syncTable(model, index, fields, extraMapper = null) {
     // Xóa toàn bộ dữ liệu cũ (nếu muốn làm fresh sync thì bỏ comment dòng này)
@@ -75,6 +76,11 @@ async function syncAll() {
         // Course (không cần join)
         await syncTable(Course, courseIndex,
             ['id', 'code', 'name', 'credit']
+        );
+
+        // Department
+        await syncTable(Department, departmentIndex,
+            ['id', 'code', 'name']
         );
 
         console.log('✅ Đồng bộ Meilisearch hoàn tất!');

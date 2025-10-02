@@ -10,7 +10,7 @@ router.get('/public-key', async (req, res) => {
         const key = await client.createKey({
             description: 'Public key for frontend',
             actions: ['search'],
-            indexes: ['roles', 'users', 'students', 'certificates', 'courses'],
+            indexes: ['roles', 'users', 'students', 'certificates', 'courses', 'departments'],
             expiresAt: null
         });
         res.json({ success: true, publicKey: key.key });
@@ -91,6 +91,48 @@ router.get('/course', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ success: false, message: 'Lỗi khi tìm course', error: err.message });
+    }
+});
+
+router.get('/department', async (req, res) => {
+    try {
+        const { keyword, code, page = 1, pageSize = 10 } = req.query;
+        const offset = (page - 1) * pageSize;
+
+        let filterParts = [];
+        if (code) {
+            // code là duy nhất nên lọc chính xác
+            filterParts.push(`code = "${code}"`);
+        }
+
+        const filterQuery = filterParts.length ? filterParts.join(' AND ') : undefined;
+
+        // keyword: chỉ dùng để search full-text (name, code đều được Meilisearch xử lý)
+        const result = await departmentIndex.search(keyword || '', {
+            filter: filterQuery,
+            offset: Number(offset),
+            limit: Number(pageSize)
+        });
+
+        if ((code || keyword) && (!result.hits || result.hits.length === 0)) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy phòng ban'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: result.hits,
+            total: result.estimatedTotalHits ?? result.hits.length
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi tìm department',
+            error: err.message
+        });
     }
 });
 

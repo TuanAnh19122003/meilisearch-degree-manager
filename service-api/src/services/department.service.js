@@ -1,4 +1,5 @@
 const Department = require('../models/department.model');
+const { departmentIndex } = require('../config/meili.client');
 
 class DepartmentService {
     static async findAll(options = {}) {
@@ -25,17 +26,34 @@ class DepartmentService {
 
     static async create(data) {
         const department = await Department.create(data);
+        await departmentIndex.addDocuments([{
+            id: department.id,
+            code: department.code,
+            name: department.name,
+        }]);
         return department;
     }
 
     static async update(id, data) {
-        const department = await Department.findOne({ where: { id: id } });
-        if (!department) throw new Error("Không tìm thấy vai trò");
-        return await department.update(data);
+        const department = await Department.findByPk(id);
+        if (!department) throw new Error('Không tìm thấy vai trò');
+
+        const updatedDepartment = await Department.update(data);
+
+        await departmentIndex.updateDocuments([{
+            id: updatedDepartment.id,
+            code: updatedDepartment.code,
+            name: updatedDepartment.name,
+            description: updatedDepartment.description
+        }]);
+
+        return updatedDepartment;
     }
 
     static async delete(id) {
-        return await Department.destroy({ where: { id: id } })
+        const deletedCount = await Department.destroy({ where: { id } });
+        if (deletedCount > 0) await departmentIndex.deleteDocument(id);
+        return deletedCount;
     }
 
 }

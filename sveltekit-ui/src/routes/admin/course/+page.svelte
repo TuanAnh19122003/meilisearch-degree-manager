@@ -65,11 +65,12 @@
 			let list: any[] = [];
 			let total = 0;
 
-			if (courseIndex) {
+			if (search && courseIndex) {
+				// chỉ search Meili khi có từ khóa
 				const filters: string[] = [];
 				if (credit) filters.push(`credit = ${credit}`);
 
-				const results = await courseIndex.search(search || '', {
+				const results = await courseIndex.search(search, {
 					filter: filters.length ? filters.join(' AND ') : undefined,
 					offset: (page - 1) * pageSize,
 					limit: pageSize
@@ -77,6 +78,7 @@
 				list = results.hits;
 				total = results.estimatedTotalHits ?? results.hits.length;
 			} else {
+				// còn lại thì gọi API backend để có dữ liệu mới nhất
 				const res = await axios.get(`${API_URL}/courses`, {
 					params: { page, pageSize, search, credit },
 					headers: getAuthHeader()

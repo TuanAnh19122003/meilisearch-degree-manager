@@ -21,7 +21,7 @@
 	}
 </script>
 
-<form class="space-y-4" on:submit|preventDefault={handleSubmit}>
+<form class="space-y-4 p-6 bg-white rounded-xl shadow-lg w-full max-w-md" on:submit|preventDefault={handleSubmit}>
 	<div>
 		<label for="" class="mb-1 block font-medium">Mã môn học</label>
 		<input

@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Plus, Pencil, Eye } from 'lucide-svelte';
+	import { Plus, Pencil } from 'lucide-svelte';
 	import { pageTitle } from '$lib/stores/pageTitle';
 	import { toast } from 'svelte-sonner';
 	import DepartmentList from './DepartmentList.svelte';
 	import DepartmentForm from './DepartmentForm.svelte';
 	import axios from 'axios';
+	import { MeiliSearch } from 'meilisearch';
 
 	let departments: any[] = [];
 	let pagination = { current: 1, pageSize: 6, total: 0 };
@@ -17,14 +18,16 @@
 	let loading = false;
 
 	const API_URL = import.meta.env.VITE_API_URL;
+	let token = '';
+	let departmentIndex: any = null;
+
 	pageTitle.set('Quản lý phòng ban');
 
-	let token = '';
-	onMount(() => {
+	onMount(async () => {
 		if (typeof localStorage !== 'undefined') {
 			token = localStorage.getItem('token') || '';
-			if (!token) window.location.href = '/auth/login';
-			else fetchDepartments();
+			if (!token) return (window.location.href = '/auth/login');
+			await initSearch();
 		}
 	});
 
@@ -32,19 +35,75 @@
 		return token ? { Authorization: `Bearer ${token}` } : {};
 	}
 
+	// Khởi tạo MeiliSearch
+	async function initSearch() {
+		try {
+			const res = await fetch(`${API_URL}/meili/public-key`);
+			const data = await res.json();
+			if (!data.success) throw new Error('Không lấy được Meilisearch public key');
+
+			const client = new MeiliSearch({
+				host: import.meta.env.VITE_MEILI_HOST,
+				apiKey: data.publicKey
+			});
+			departmentIndex = client.index('departments');
+			await fetchDepartments();
+		} catch (err) {
+			console.error(err);
+			toast.error('Không kết nối được MeiliSearch');
+		}
+	}
+
+	let searchTimeout: NodeJS.Timeout;
+	function handleSearchInput() {
+		clearTimeout(searchTimeout);
+		searchTimeout = setTimeout(() => fetchDepartments(1), 400);
+	}
+
 	// FETCH DATA
 	async function fetchDepartments(page = 1, pageSize = pagination.pageSize) {
 		loading = true;
 		try {
-			const response = await axios.get(`${API_URL}/departments`, {
-				params: { page, pageSize, search },
-				headers: getAuthHeader()
-			});
-			const { success, data, total, message } = response.data;
-			if (success) {
-				departments = data;
-				pagination = { current: page, pageSize, total };
-			} else toast.error(message || 'Lỗi tải dữ liệu');
+			let deptList: any[] = [];
+			let total = 0;
+
+			if (search && departmentIndex) {
+				// Nếu có search thì ưu tiên tìm trong MeiliSearch
+				let results = await departmentIndex.search(search, {
+					offset: (page - 1) * pageSize,
+					limit: pageSize
+				});
+
+				// Nếu bạn muốn ưu tiên tìm theo code chính xác:
+				if (!results.hits.length) {
+					results = await departmentIndex.search(search, {
+						filter: `code = "${search}"`,
+						offset: (page - 1) * pageSize,
+						limit: pageSize
+					});
+				}
+
+				deptList = results.hits;
+				total = results.estimatedTotalHits ?? results.hits.length;
+			} else {
+				// Không search → lấy từ backend (dữ liệu chắc chắn mới nhất)
+				const response = await axios.get(`${API_URL}/departments`, {
+					params: { page, pageSize },
+					headers: getAuthHeader()
+				});
+				const { success, data, total: totalRes, message } = response.data;
+				if (success) {
+					deptList = data;
+					total = totalRes ?? data.length;
+				} else {
+					toast.error(message || 'Lỗi tải dữ liệu');
+					deptList = [];
+					total = 0;
+				}
+			}
+
+			departments = deptList;
+			pagination = { current: page, pageSize, total };
 		} catch (err) {
 			console.error(err);
 			toast.error('Lỗi khi tải danh sách phòng ban');
@@ -53,26 +112,22 @@
 		}
 	}
 
+	// CRUD
 	function handleAdd() {
 		editingDept = null;
 		openForm = true;
 	}
-
 	function handleEdit(dept: any) {
 		editingDept = dept;
 		openForm = true;
 	}
-
 	function handleView(dept: any) {
 		viewingDept = dept;
 	}
-
 	async function handleDelete(id: string) {
 		const dept = departments.find((d) => d.id === id);
 		const deptName = dept?.name || 'phòng ban này';
-		const confirmed = window.confirm(`Bạn có chắc chắn muốn xóa phòng ban "${deptName}" không?`);
-		if (!confirmed) return;
-
+		if (!window.confirm(`Bạn có chắc chắn muốn xóa phòng ban "${deptName}" không?`)) return;
 		try {
 			await axios.delete(`${API_URL}/departments/${id}`, { headers: getAuthHeader() });
 			toast.success('Xóa thành công');
@@ -86,7 +141,6 @@
 			toast.error('Xóa thất bại');
 		}
 	}
-
 	async function handleSubmit(dept: any) {
 		try {
 			if (editingDept) {
@@ -110,22 +164,12 @@
 <div class="space-y-6">
 	<!-- HEADER -->
 	<div class="flex items-center justify-between">
-		<h2 class="flex items-center gap-2 text-2xl font-semibold">
-			<svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M3 7h18M3 12h18M3 17h18"
-				/>
-			</svg>
-			Danh sách phòng ban
-		</h2>
+		<h2 class="flex items-center gap-2 text-2xl font-semibold">Danh sách phòng ban</h2>
 		<div class="flex gap-3">
 			<input
-				placeholder="Tìm kiếm phòng ban..."
+				placeholder="Mã hoặc tên phòng ban"
 				bind:value={search}
-				on:input={() => fetchDepartments(1, pagination.pageSize)}
+				on:input={handleSearchInput}
 				class="w-64 rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
 			/>
 			<button
@@ -177,7 +221,6 @@
 	{#if viewingDept}
 		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
 			<div class="animate-fade-in w-[480px] overflow-hidden rounded-xl bg-white shadow-xl">
-				<!-- Header -->
 				<div
 					class="flex items-center gap-4 border-b bg-gradient-to-r from-blue-50 to-blue-100 px-6 py-5"
 				>
@@ -199,21 +242,15 @@
 						</p>
 					</div>
 				</div>
-
-				<!-- Body -->
 				<div class="space-y-3 px-6 py-5 text-gray-700">
 					<div><b>ID:</b> {viewingDept.id}</div>
 					<div><b>Tên phòng ban:</b> {viewingDept.name}</div>
 					<div><b>Mã phòng ban:</b> {viewingDept.code}</div>
 				</div>
-
-				<!-- Footer -->
 				<div class="flex justify-between border-t px-6 py-4 text-sm text-gray-500">
 					<span>Ngày tạo: {new Date(viewingDept.createdAt).toLocaleString()}</span>
 					<span>Cập nhật: {new Date(viewingDept.updatedAt).toLocaleString()}</span>
 				</div>
-
-				<!-- Actions -->
 				<div class="bg-gray-50 px-6 py-3 text-right">
 					<button
 						class="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300"
@@ -226,19 +263,3 @@
 		</div>
 	{/if}
 </div>
-
-<style>
-	.animate-fade-in {
-		animation: fade-in 0.25s ease-out;
-	}
-	@keyframes fade-in {
-		from {
-			opacity: 0;
-			transform: scale(0.95);
-		}
-		to {
-			opacity: 1;
-			transform: scale(1);
-		}
-	}
-</style>
