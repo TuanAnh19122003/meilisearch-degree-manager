@@ -16,7 +16,8 @@ class UserService {
     }
 
     static async findById(id) {
-        const user = await User.findByPk(id, {
+        const user = await User.findOne({
+            where: { id },
             include: { model: Role, as: 'role', attributes: ['id', 'name', 'code'] }
         });
         if (!user) throw new Error('User không tồn tại');
@@ -28,27 +29,32 @@ class UserService {
         if (file) data.image = `uploads/${file.filename}`;
 
         const user = await User.create(data);
-        const userWithRole = await User.findByPk(user.id, {
+
+        // Fetch đầy đủ quan hệ Role
+        const fullUser = await User.findOne({
+            where: { id: user.id },
             include: { model: Role, as: 'role', attributes: ['id', 'name', 'code'] }
         });
 
         // Đồng bộ lên Meilisearch
         await userIndex.addDocuments([{
-            id: userWithRole.id,
-            firstname: userWithRole.firstname,
-            lastname: userWithRole.lastname,
-            email: userWithRole.email,
-            phone: userWithRole.phone,
-            is_active: userWithRole.is_active,
-            image: userWithRole.image,
-            role: userWithRole.role ? { id: userWithRole.role.id, name: userWithRole.role.name, code: userWithRole.role.code } : null
+            id: fullUser.id,
+            firstname: fullUser.firstname,
+            lastname: fullUser.lastname,
+            email: fullUser.email,
+            phone: fullUser.phone,
+            is_active: fullUser.is_active,
+            image: fullUser.image,
+            role: fullUser.role
+                ? { id: fullUser.role.id, name: fullUser.role.name, code: fullUser.role.code }
+                : null
         }]);
 
-        return userWithRole;
+        return fullUser;
     }
 
     static async update(id, data, file) {
-        const user = await User.findByPk(id, { include: { model: Role, as: 'role' } });
+        const user = await User.findOne({ where: { id }, include: { model: Role, as: 'role' } });
         if (!user) throw new Error('User không tồn tại');
 
         if (data.password && data.password !== user.password) data.password = await hashPassword(data.password);
@@ -62,38 +68,46 @@ class UserService {
             data.image = `uploads/${file.filename}`;
         }
 
-        const updated = await user.update(data);
+        await user.update(data);
+
+        // Fetch lại đầy đủ quan hệ Role
+        const fullUser = await User.findOne({
+            where: { id },
+            include: { model: Role, as: 'role', attributes: ['id', 'name', 'code'] }
+        });
 
         // Đồng bộ lại Meilisearch
         await userIndex.updateDocuments([{
-            id: updated.id,
-            firstname: updated.firstname,
-            lastname: updated.lastname,
-            email: updated.email,
-            phone: updated.phone,
-            is_active: updated.is_active,
-            image: updated.image,
-            role: updated.role ? { id: updated.role.id, name: updated.role.name, code: updated.role.code } : null
+            id: fullUser.id,
+            firstname: fullUser.firstname,
+            lastname: fullUser.lastname,
+            email: fullUser.email,
+            phone: fullUser.phone,
+            is_active: fullUser.is_active,
+            image: fullUser.image,
+            role: fullUser.role
+                ? { id: fullUser.role.id, name: fullUser.role.name, code: fullUser.role.code }
+                : null
         }]);
 
-        return await User.findByPk(id, { include: { model: Role, as: 'role' } });
+        return fullUser;
     }
 
     static async delete(id) {
-        const user = await User.findByPk(id);
+        const user = await User.findOne({ where: { id } });
         if (!user) return 0;
 
-        // Xóa ảnh nếu có
         if (user.image) {
             const imagePath = path.join(__dirname, '..', user.image);
             if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
         }
 
-        const deletedCount = await User.destroy({ where: { id } });
+        await User.destroy({ where: { id } });
 
-        if (deletedCount > 0) await userIndex.deleteDocument(id);
+        // Xóa khỏi Meilisearch
+        await userIndex.deleteDocument(id);
 
-        return deletedCount;
+        return true;
     }
 }
 
