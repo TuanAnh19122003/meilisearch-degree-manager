@@ -57,6 +57,54 @@ router.get('/certificate', async (req, res) => {
     }
 });
 
+// Student search / list (pagination + code + email + keyword)
+router.get('/student', async (req, res) => {
+    try {
+        const { code, email, keyword, page = 1, pageSize = 10 } = req.query;
+        const offset = (page - 1) * pageSize;
+
+        let filterParts = [];
+        if (code) {
+            filterParts.push(`code = "${code}"`);
+        }
+        if (email) {
+            filterParts.push(`email = "${email}"`);
+        }
+
+        const filterQuery = filterParts.length ? filterParts.join(' AND ') : undefined;
+
+        const result = await studentIndex.search(keyword || '', {
+            filter: filterQuery,
+            offset: Number(offset),
+            limit: Number(pageSize)
+        });
+
+        // Nếu tìm theo code/email mà không có kết quả thì trả về 404
+        if ((code || email) && (!result.hits || result.hits.length === 0)) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy sinh viên'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: result.hits.map(s => ({
+                ...s,
+                major: s.major || { name: '-' } // fallback cho an toàn
+            })),
+            total: result.estimatedTotalHits ?? result.hits.length
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi tìm student',
+            error: err.message
+        });
+    }
+});
+
 router.get('/course', async (req, res) => {
     try {
         const { keyword, code, credit, page = 1, pageSize = 10 } = req.query;

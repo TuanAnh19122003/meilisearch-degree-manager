@@ -65,12 +65,10 @@
 			let certList: any[] = [];
 			let total = 0;
 
-			// Nếu có search (số văn bằng hoặc mã sinh viên) hoặc status, search Meili
 			if ((search || searchStatus) && certIndex) {
 				const filters: string[] = [];
 
 				if (search) {
-					// number hoặc student code
 					filters.push(`number = "${search}" OR student.code = "${search}"`);
 				}
 				if (searchStatus) {
@@ -79,7 +77,7 @@
 
 				const filterQuery = filters.length ? filters.join(' AND ') : undefined;
 
-				const results = await certIndex.search('', {
+				const results = await certIndex.search(search || '', {
 					filter: filterQuery,
 					offset: (page - 1) * pageSize,
 					limit: pageSize
@@ -88,7 +86,6 @@
 				certList = results.hits;
 				total = results.estimatedTotalHits ?? results.hits.length;
 			} else {
-				// Lấy dữ liệu từ backend
 				const params: any = { page, pageSize };
 				if (search) params.identifier = search;
 				if (searchStatus) params.status = searchStatus;

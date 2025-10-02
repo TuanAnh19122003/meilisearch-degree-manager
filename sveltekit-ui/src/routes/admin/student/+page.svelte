@@ -80,42 +80,50 @@
 			let studentList: any[] = [];
 			let total = 0;
 
+			// Nếu có search thì gọi Meili
 			if (search && studentIndex) {
-				const isUniqueField = /^[A-Z]{2}\d+$/.test(search) || /\S+@\S+\.\S+/.test(search);
+				const filters: string[] = [];
 
-				if (isUniqueField) {
-					const res = await fetch(`${API_URL}/meili/student/${search}`);
-					const data = await res.json();
-					if (data.success && data.data) {
-						studentList = [{ ...data.data, major: data.data.major || { name: '-' } }];
-						total = 1;
-					} else {
-						studentList = [];
-						total = 0;
-						toast.error('Không tìm thấy sinh viên với mã hoặc email này');
-					}
-				} else {
-					const results = await studentIndex.search(search, {
-						offset: (page - 1) * pageSize,
-						limit: pageSize
-					});
-					studentList = results.hits.map((s: any) => ({
+				// Nếu search có dạng code hoặc email (unique)
+				if (/^[A-Z]{2,}\d+$/.test(search)) {
+					filters.push(`code = "${search}"`);
+				} else if (/\S+@\S+\.\S+/.test(search)) {
+					filters.push(`email = "${search}"`);
+				}
+
+				const filterQuery = filters.length ? filters.join(' AND ') : undefined;
+
+				const results = await studentIndex.search(search || '', {
+					filter: filterQuery,
+					offset: (page - 1) * pageSize,
+					limit: pageSize
+				});
+
+				studentList = results.hits.map((s: any) => ({
+					...s,
+					major: s.major || { name: '-' }
+				}));
+				total = results.estimatedTotalHits ?? results.hits.length;
+			} else {
+				const params: any = { page, pageSize };
+				if (search) params.keyword = search;
+
+				const res = await axios.get(`${API_URL}/students`, {
+					params,
+					headers: getAuthHeader()
+				});
+
+				const { success, data, total: totalRes, message } = res.data;
+				if (success) {
+					studentList = data.map((s: any) => ({
 						...s,
 						major: s.major || { name: '-' }
 					}));
-					total = results.estimatedTotalHits ?? 0;
-				}
-			} else {
-				const res = await axios.get(`${API_URL}/students`, {
-					params: { page, pageSize, search },
-					headers: getAuthHeader()
-				});
-				const { success, data, total: totalRes, message } = res.data;
-				if (success) {
-					studentList = data.map((s: any) => ({ ...s, major: s.major || { name: '-' } }));
-					total = totalRes;
+					total = totalRes ?? data.length;
 				} else {
 					toast.error(message || 'Lỗi tải danh sách sinh viên');
+					studentList = [];
+					total = 0;
 				}
 			}
 
