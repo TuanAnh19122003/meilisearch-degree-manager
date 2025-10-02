@@ -1,39 +1,64 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Plus, Pencil, Eye } from 'lucide-svelte';
+	import { MeiliSearch } from 'meilisearch';
+	import axios from 'axios';
 	import { pageTitle } from '$lib/stores/pageTitle';
 	import { toast } from 'svelte-sonner';
 	import MajorList from './MajorList.svelte';
 	import MajorForm from './MajorForm.svelte';
-	import axios from 'axios';
+	import { Plus } from 'lucide-svelte';
 
 	let majors: any[] = [];
 	let departments: any[] = [];
 	let pagination = { current: 1, pageSize: 6, total: 0 };
-	let viewMode: 'list' | 'card' = 'list';
 	let search = '';
 	let openForm = false;
 	let editingMajor: any = null;
 	let viewingMajor: any = null;
 	let loading = false;
+	let viewMode: 'list' | 'card' = 'list';
 
 	const API_URL = import.meta.env.VITE_API_URL;
+	let token = '';
+	let majorIndex: any = null;
+
 	pageTitle.set('Quản lý ngành học');
 
-	let token = '';
-	onMount(() => {
+	let searchTimeout: NodeJS.Timeout;
+
+	onMount(async () => {
 		if (typeof localStorage !== 'undefined') {
 			token = localStorage.getItem('token') || '';
 			if (!token) window.location.href = '/auth/login';
 			else {
-				fetchMajors();
-				fetchDepartments();
+				await initSearch();
+				await fetchDepartments();
 			}
 		}
 	});
 
 	function getAuthHeader() {
 		return token ? { Authorization: `Bearer ${token}` } : {};
+	}
+
+	// Khởi tạo MeiliSearch public key cho tìm kiếm
+	async function initSearch() {
+		try {
+			const res = await fetch(`${API_URL}/meili/public-key`);
+			const data = await res.json();
+			if (!data.success) throw new Error('Không lấy được Meilisearch public key');
+
+			const client = new MeiliSearch({
+				host: import.meta.env.VITE_MEILI_HOST,
+				apiKey: data.publicKey
+			});
+
+			majorIndex = client.index('majors');
+			await fetchMajors();
+		} catch (err) {
+			console.error(err);
+			toast.error('Không kết nối được Meilisearch');
+		}
 	}
 
 	async function fetchDepartments() {
@@ -46,18 +71,54 @@
 		}
 	}
 
+	// Debounce search
+	function handleSearchInput() {
+		clearTimeout(searchTimeout);
+		searchTimeout = setTimeout(() => fetchMajors(1, pagination.pageSize), 400);
+	}
+
+	// Lấy danh sách ngành học
 	async function fetchMajors(page = 1, pageSize = pagination.pageSize) {
 		loading = true;
 		try {
-			const response = await axios.get(`${API_URL}/majors`, {
-				params: { page, pageSize, search },
-				headers: getAuthHeader()
-			});
-			const { success, data, total, message } = response.data;
-			if (success) {
-				majors = data;
-				pagination = { current: page, pageSize, total };
-			} else toast.error(message || 'Lỗi tải dữ liệu');
+			let results: any;
+
+			if (search && majorIndex) {
+				const isCode = /^[A-Z]{2,}-?\d+$/.test(search.trim());
+				let filterQuery: string | undefined;
+				let searchQuery = '';
+
+				if (isCode) {
+					filterQuery = `department.code = "${search.toUpperCase()}"`;
+				} else {
+					searchQuery = search;
+				}
+
+				results = await majorIndex.search(searchQuery, {
+					offset: (page - 1) * pageSize,
+					limit: pageSize,
+					filter: filterQuery
+				});
+
+				majors = results.hits.map((m: any) => ({
+					...m,
+					department: m.department || { name: '-', code: '-' }
+				}));
+				pagination = { current: page, pageSize, total: results.estimatedTotalHits ?? 0 };
+			} else {
+				const res = await axios.get(`${API_URL}/majors`, {
+					params: { page, pageSize },
+					headers: getAuthHeader()
+				});
+				const { success, data, total, message } = res.data;
+				if (success) {
+					majors = data.map((m) => ({
+						...m,
+						department: m.department || { name: '-', code: '-' }
+					}));
+					pagination = { current: page, pageSize, total };
+				} else toast.error(message || 'Lỗi tải dữ liệu');
+			}
 		} catch (err) {
 			console.error(err);
 			toast.error('Lỗi khi tải danh sách ngành học');
@@ -70,22 +131,15 @@
 		editingMajor = null;
 		openForm = true;
 	}
-
 	function handleEdit(major: any) {
 		editingMajor = major;
 		openForm = true;
 	}
-
 	function handleView(major: any) {
 		viewingMajor = major;
 	}
-
 	async function handleDelete(id: string) {
-		const major = majors.find((d) => d.id === id);
-		const majorName = major?.name || 'ngành này';
-		const confirmed = window.confirm(`Bạn có chắc chắn muốn xóa ngành "${majorName}" không?`);
-		if (!confirmed) return;
-
+		if (!window.confirm('Bạn có chắc chắn muốn xóa ngành học này không?')) return;
 		try {
 			await axios.delete(`${API_URL}/majors/${id}`, { headers: getAuthHeader() });
 			toast.success('Xóa thành công');
@@ -97,16 +151,15 @@
 			toast.error('Xóa thất bại');
 		}
 	}
-
-	async function handleSubmit(major: any) {
+	async function handleSubmit(formData: any) {
 		try {
 			if (editingMajor) {
-				await axios.put(`${API_URL}/majors/${editingMajor.id}`, major, {
+				await axios.put(`${API_URL}/majors/${editingMajor.id}`, formData, {
 					headers: getAuthHeader()
 				});
 				toast.success('Cập nhật thành công');
 			} else {
-				await axios.post(`${API_URL}/majors`, major, { headers: getAuthHeader() });
+				await axios.post(`${API_URL}/majors`, formData, { headers: getAuthHeader() });
 				toast.success('Thêm mới thành công');
 			}
 			openForm = false;
@@ -116,21 +169,24 @@
 			toast.error('Thao tác thất bại');
 		}
 	}
+	function handleViewModeChange(mode: 'list' | 'card') {
+		viewMode = mode;
+	}
 </script>
 
 <div class="space-y-6">
-	<!-- HEADER -->
+	<!-- Header -->
 	<div class="flex items-center justify-between">
-		<h2 class="flex items-center gap-2 text-2xl font-semibold text-blue-600">Ngành học</h2>
+		<h2 class="text-2xl font-semibold">Danh sách ngành học</h2>
 		<div class="flex gap-3">
 			<input
-				placeholder="Tìm kiếm ngành học..."
+				placeholder="Tìm kiếm ngành học hoặc phòng ban..."
 				bind:value={search}
-				on:input={() => fetchMajors(1, pagination.pageSize)}
-				class="w-64 rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
+				on:input={handleSearchInput}
+				class="w-64 rounded-lg border px-3 py-2"
 			/>
 			<button
-				class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white shadow hover:bg-blue-700"
+				class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white"
 				on:click={handleAdd}
 			>
 				<Plus class="h-4 w-4" /> Thêm
@@ -145,25 +201,20 @@
 			data={majors}
 			{pagination}
 			{viewMode}
+			on:viewModeChange={(e) => handleViewModeChange(e.detail)}
 			on:edit={(e) => handleEdit(e.detail)}
 			on:view={(e) => handleView(e.detail)}
 			on:delete={(e) => handleDelete(e.detail)}
 			on:pageSizeChange={(e) => fetchMajors(1, e.detail)}
 			on:pageChange={(e) => fetchMajors(e.detail, pagination.pageSize)}
-			on:viewModeChange={(e) => (viewMode = e.detail)}
 		/>
 	{/if}
 
-	<!-- Modal Form -->
 	{#if openForm}
 		<div class="fixed inset-0 flex items-center justify-center bg-black/40">
-			<div class="animate-fade-in w-[420px] rounded-lg bg-white p-6 shadow-lg">
-				<h3 class="mb-4 flex items-center gap-2 text-lg font-bold">
-					{#if editingMajor}
-						<Pencil class="h-5 w-5 text-blue-600" /> Cập nhật ngành học
-					{:else}
-						<Plus class="h-5 w-5 text-blue-600" /> Thêm ngành học
-					{/if}
+			<div class="w-[520px] rounded-lg bg-white p-6 shadow-lg">
+				<h3 class="mb-4 text-lg font-bold">
+					{editingMajor ? 'Cập nhật ngành học' : 'Thêm ngành học'}
 				</h3>
 				<MajorForm
 					initialValues={editingMajor}
@@ -175,16 +226,14 @@
 		</div>
 	{/if}
 
-	<!-- Modal View -->
 	{#if viewingMajor}
 		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-			<div class="animate-fade-in w-[500px] overflow-hidden rounded-xl bg-white shadow-xl">
-				<!-- Header -->
+			<div class="animate-fade-in w-[480px] overflow-hidden rounded-xl bg-white shadow-xl">
 				<div
 					class="flex items-center gap-4 border-b bg-gradient-to-r from-indigo-50 to-indigo-100 px-6 py-5"
 				>
 					<div
-						class="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-200 text-lg font-bold tracking-tight text-indigo-700"
+						class="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-200 text-xl font-bold tracking-tight text-indigo-700"
 					>
 						{(viewingMajor.name?.[0] ?? 'N').toUpperCase()}
 					</div>
@@ -193,26 +242,17 @@
 						<p class="text-sm text-gray-600">Mã ngành: {viewingMajor.code}</p>
 					</div>
 				</div>
-
-				<!-- Body -->
 				<div class="space-y-3 px-6 py-5 text-gray-700">
-					<div><b>ID:</b> {viewingMajor.id}</div>
-					<div>
-						<b>Phòng ban:</b>
-						{viewingMajor.department?.name} ({viewingMajor.department?.code})
-					</div>
-					<div><b>Ngày tạo:</b> {new Date(viewingMajor.createdAt).toLocaleString()}</div>
-					<div><b>Ngày cập nhật:</b> {new Date(viewingMajor.updatedAt).toLocaleString()}</div>
+					<p><b>ID:</b> {viewingMajor.id}</p>
+					<p><b>Phòng ban:</b> {viewingMajor.department?.name} ({viewingMajor.department?.code})</p>
+					<p><b>Ngày tạo:</b> {new Date(viewingMajor.createdAt).toLocaleString()}</p>
+					<p><b>Ngày cập nhật:</b> {new Date(viewingMajor.updatedAt).toLocaleString()}</p>
 				</div>
-
-				<!-- Footer -->
-				<div class="flex justify-end bg-gray-50 px-6 py-3">
+				<div class="bg-gray-50 px-6 py-3 text-right">
 					<button
 						class="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300"
-						on:click={() => (viewingMajor = null)}
+						on:click={() => (viewingMajor = null)}>Đóng</button
 					>
-						Đóng
-					</button>
 				</div>
 			</div>
 		</div>

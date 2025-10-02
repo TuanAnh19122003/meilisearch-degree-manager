@@ -10,7 +10,7 @@ router.get('/public-key', async (req, res) => {
         const key = await client.createKey({
             description: 'Public key for frontend',
             actions: ['search'],
-            indexes: ['roles', 'users', 'students', 'certificates', 'courses', 'departments'],
+            indexes: ['roles', 'users', 'students', 'certificates', 'courses', 'departments','majors'],
             expiresAt: null
         });
         res.json({ success: true, publicKey: key.key });
@@ -186,5 +186,52 @@ router.get('/department', async (req, res) => {
     }
 });
 
+router.get('/major', async (req, res) => {
+    try {
+        const { keyword, code, deptId, page = 1, pageSize = 10 } = req.query;
+        const offset = (page - 1) * pageSize;
+
+        let filterParts = [];
+        let searchQuery = keyword || '';
+
+        if (code) {
+            // tìm chính xác theo code
+            filterParts.push(`code = "${code}"`);
+            searchQuery = '';
+        }
+        if (deptId) {
+            filterParts.push(`deptId = ${deptId}`);
+        }
+
+        const filterQuery = filterParts.length ? filterParts.join(' AND ') : undefined;
+
+        // search trên name/code/dept.name
+        const result = await majorIndex.search(searchQuery, {
+            filter: filterQuery,
+            offset: Number(offset),
+            limit: Number(pageSize)
+        });
+
+        if ((code || keyword) && (!result.hits || result.hits.length === 0)) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy chuyên ngành'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: result.hits,
+            total: result.estimatedTotalHits ?? result.hits.length
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi tìm major',
+            error: err.message
+        });
+    }
+});
 
 module.exports = router;

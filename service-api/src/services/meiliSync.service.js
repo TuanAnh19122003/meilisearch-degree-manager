@@ -6,7 +6,7 @@ const StudentGpaService = require('../services/studentGpa.service');
 const Certificate = require('../models/certificate.model');
 const Course = require('../models/course.model');
 
-const { roleIndex, userIndex, studentIndex, certificateIndex, courseIndex, departmentIndex } = require('../config/meili.client');
+const { roleIndex, userIndex, studentIndex, certificateIndex, courseIndex, departmentIndex, majorIndex } = require('../config/meili.client');
 const Department = require('../models/department.model');
 
 async function syncTable(model, index, fields, extraMapper = null) {
@@ -24,8 +24,11 @@ async function syncTable(model, index, fields, extraMapper = null) {
             { model: Role, as: 'role', attributes: ['id', 'name', 'code'] }
         ] : model === Student ? [
             { model: Major, as: 'major', attributes: ['id', 'name'] }
+        ] : model === Major ? [
+            { model: require('../models/department.model'), as: 'department', attributes: ['id', 'name', 'code'] }
         ] : []
     });
+
 
     if (!data.length) return;
 
@@ -82,6 +85,15 @@ async function syncAll() {
         await syncTable(Department, departmentIndex,
             ['id', 'code', 'name']
         );
+
+        // Major
+        await syncTable(Major, majorIndex,
+            ['id', 'code', 'name', 'deptId'],
+            async (item) => {
+                return { department: item.department ? { id: item.department.id, name: item.department.name, code: item.department.code } : null };
+            }
+        );
+
 
         console.log('Đồng bộ Meilisearch hoàn tất!');
     } catch (err) {
