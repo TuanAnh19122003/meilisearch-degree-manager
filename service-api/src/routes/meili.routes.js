@@ -10,7 +10,7 @@ router.get('/public-key', async (req, res) => {
         const key = await client.createKey({
             description: 'Public key for frontend',
             actions: ['search'],
-            indexes: ['roles', 'users', 'students', 'certificates'],
+            indexes: ['roles', 'users', 'students', 'certificates', 'courses'],
             expiresAt: null
         });
         res.json({ success: true, publicKey: key.key });
@@ -28,7 +28,7 @@ router.get('/certificate', async (req, res) => {
 
         let filterParts = [];
         if (identifier) {
-            const isNumber = /^CERT-\d{6,}$/.test(identifier); // ví dụ CERT-000001
+            const isNumber = /^CERT-\d{6,}$/.test(identifier);
             if (isNumber) filterParts.push(`number = "${identifier}"`);
             else filterParts.push(`student.code = "${identifier}"`);
         }
@@ -56,5 +56,43 @@ router.get('/certificate', async (req, res) => {
         res.status(500).json({ success: false, message: 'Lỗi khi tìm certificate', error: err.message });
     }
 });
+
+router.get('/course', async (req, res) => {
+    try {
+        const { keyword, code, credit, page = 1, pageSize = 10 } = req.query;
+        const offset = (page - 1) * pageSize;
+
+        let filterParts = [];
+        if (code) {
+            filterParts.push(`code = "${code}"`);
+        }
+        if (credit) {
+            filterParts.push(`credit = ${credit}`); // credit là số nên không cần ""
+        }
+
+        const filterQuery = filterParts.length ? filterParts.join(' AND ') : undefined;
+
+        // keyword -> search trên name hoặc code
+        const result = await courseIndex.search(keyword || '', {
+            filter: filterQuery,
+            offset: Number(offset),
+            limit: Number(pageSize)
+        });
+
+        if ((code || keyword) && (!result.hits || result.hits.length === 0)) {
+            return res.status(404).json({ success: false, message: 'Không tìm thấy môn học' });
+        }
+
+        res.json({
+            success: true,
+            data: result.hits,
+            total: result.estimatedTotalHits ?? result.hits.length
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Lỗi khi tìm course', error: err.message });
+    }
+});
+
 
 module.exports = router;

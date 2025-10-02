@@ -27,10 +27,10 @@ app.get('/', (req, res) => {
 
 async function startServer() {
     try {
-        // Đồng bộ tất cả bảng lên Meilisearch
-        await syncAll();
+        if (process.env.SYNC_MEILI === 'true') {
+            await syncAll();
+        }
 
-        // Khởi động server
         app.listen(port, () => {
             console.log(`Server is running on http://localhost:${port}`);
         });

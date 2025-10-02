@@ -9,6 +9,7 @@ const userIndex = client.index('users');
 const roleIndex = client.index('roles');
 const studentIndex = client.index('students');
 const certificateIndex = client.index('certificates');
+const courseIndex = client.index('courses');
 
 (async () => {
     // User
@@ -28,6 +29,12 @@ const certificateIndex = client.index('certificates');
     await certificateIndex.updateSearchableAttributes(['number', 'type', 'issuer']);
     await certificateIndex.updateDisplayedAttributes(['id', 'number', 'type', 'grad_date', 'issuer', 'status', 'file_url', 'student']);
     await certificateIndex.updateFilterableAttributes(['number', 'status', 'student.code']);
+
+    // Course
+    await courseIndex.updateSearchableAttributes(['name', 'code']);
+    await courseIndex.updateDisplayedAttributes(['id', 'name', 'code', 'credit']);
+    await courseIndex.updateFilterableAttributes(['code', 'name', 'credit']);
+
 })();
 
-module.exports = { client, userIndex, roleIndex, studentIndex, certificateIndex };
+module.exports = { client, userIndex, roleIndex, studentIndex, certificateIndex, courseIndex };

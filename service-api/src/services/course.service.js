@@ -1,4 +1,5 @@
 const Course = require('../models/course.model');
+const courseIndex = require('../config/meili.client');
 
 class CourseService {
     static async findAll(options = {}) {
@@ -24,17 +25,36 @@ class CourseService {
 
     static async create(data) {
         const course = await Course.create(data);
+        await courseIndex.addDocuments([{
+            id: course.id,
+            code: course.code,
+            name: course.name,
+            credit: course.credit
+        }]);
+
         return course;
     }
 
     static async update(id, data) {
-        const course = await Course.findOne({ where: { id: id } });
-        if (!course) throw new Error("Không tìm thấy môn học");
-        return await course.update(data);
+        const course = await Course.findByPk(id);
+        if (!course) throw new Error('Không tìm thấy vai trò');
+
+        const updatedcourse = await Course.update(data);
+
+        await courseIndex.updateDocuments([{
+            id: updatedcourse.id,
+            code: updatedcourse.code,
+            name: updatedcourse.name,
+            description: updatedcourse.description
+        }]);
+
+        return updatedcourse;
     }
 
     static async delete(id) {
-        return await Course.destroy({ where: { id: id } })
+        const deletedCount = await Course.destroy({ where: { id } });
+        if (deletedCount > 0) await courseIndex.deleteDocument(id);
+        return deletedCount;
     }
 
 }

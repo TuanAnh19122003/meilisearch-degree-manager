@@ -4,10 +4,12 @@ const Student = require('../models/student.model');
 const Major = require('../models/major.model');
 const StudentGpaService = require('../services/studentGpa.service');
 const Certificate = require('../models/certificate.model');
-const { roleIndex, userIndex, studentIndex, certificateIndex } = require('../config/meili.client');
+const Course = require('../models/course.model');
+
+const { roleIndex, userIndex, studentIndex, certificateIndex, courseIndex } = require('../config/meili.client');
 
 async function syncTable(model, index, fields, extraMapper = null) {
-    // Xóa toàn bộ dữ liệu cũ
+    // Xóa toàn bộ dữ liệu cũ (nếu muốn làm fresh sync thì bỏ comment dòng này)
     // await index.deleteAllDocuments();
 
     const data = await model.findAll({
@@ -23,7 +25,6 @@ async function syncTable(model, index, fields, extraMapper = null) {
             { model: Major, as: 'major', attributes: ['id', 'name'] }
         ] : []
     });
-
 
     if (!data.length) return;
 
@@ -71,9 +72,14 @@ async function syncAll() {
             }
         );
 
-        console.log('Đồng bộ Meilisearch hoàn tất!');
+        // Course (không cần join)
+        await syncTable(Course, courseIndex,
+            ['id', 'code', 'name', 'credit']
+        );
+
+        console.log('✅ Đồng bộ Meilisearch hoàn tất!');
     } catch (err) {
-        console.error('Lỗi khi đồng bộ Meilisearch:', err);
+        console.error('❌ Lỗi khi đồng bộ Meilisearch:', err);
     }
 }
 
