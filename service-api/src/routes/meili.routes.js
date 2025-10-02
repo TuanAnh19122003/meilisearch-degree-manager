@@ -91,7 +91,7 @@ router.get('/student', async (req, res) => {
             success: true,
             data: result.hits.map(s => ({
                 ...s,
-                major: s.major || { name: '-' } // fallback cho an toàn
+                major: s.major || { name: '-' }
             })),
             total: result.estimatedTotalHits ?? result.hits.length
         });
@@ -148,15 +148,17 @@ router.get('/department', async (req, res) => {
         const offset = (page - 1) * pageSize;
 
         let filterParts = [];
+        let searchQuery = keyword || '';
+
         if (code) {
-            // code là duy nhất nên lọc chính xác
+            // Nếu có code thì KHÔNG search, chỉ filter chính xác
             filterParts.push(`code = "${code}"`);
+            searchQuery = ''; // bỏ search để tránh ra nhiều kết quả
         }
 
         const filterQuery = filterParts.length ? filterParts.join(' AND ') : undefined;
 
-        // keyword: chỉ dùng để search full-text (name, code đều được Meilisearch xử lý)
-        const result = await departmentIndex.search(keyword || '', {
+        const result = await departmentIndex.search(searchQuery, {
             filter: filterQuery,
             offset: Number(offset),
             limit: Number(pageSize)

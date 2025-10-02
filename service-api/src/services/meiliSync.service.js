@@ -11,7 +11,7 @@ const Department = require('../models/department.model');
 
 async function syncTable(model, index, fields, extraMapper = null) {
     // Xóa toàn bộ dữ liệu cũ (nếu muốn làm fresh sync thì bỏ comment dòng này)
-    // await index.deleteAllDocuments();
+    await index.deleteAllDocuments();
 
     const data = await model.findAll({
         include: model === Certificate ? [
@@ -83,9 +83,9 @@ async function syncAll() {
             ['id', 'code', 'name']
         );
 
-        console.log('✅ Đồng bộ Meilisearch hoàn tất!');
+        console.log('Đồng bộ Meilisearch hoàn tất!');
     } catch (err) {
-        console.error('❌ Lỗi khi đồng bộ Meilisearch:', err);
+        console.error('Lỗi khi đồng bộ Meilisearch:', err);
     }
 }
 

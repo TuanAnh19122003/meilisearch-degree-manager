@@ -68,16 +68,19 @@
 			let total = 0;
 
 			if (search && departmentIndex) {
-				// Nếu có search thì ưu tiên tìm trong MeiliSearch
-				let results = await departmentIndex.search(search, {
-					offset: (page - 1) * pageSize,
-					limit: pageSize
-				});
+				const isCode = /^[A-Z]{2,}[-]?\d+$/.test(search);
+				let results;
 
-				// Nếu bạn muốn ưu tiên tìm theo code chính xác:
-				if (!results.hits.length) {
-					results = await departmentIndex.search(search, {
+				if (isCode) {
+					// Tìm chính xác theo code → searchQuery để trống
+					results = await departmentIndex.search('', {
 						filter: `code = "${search}"`,
+						offset: (page - 1) * pageSize,
+						limit: pageSize
+					});
+				} else {
+					// Full-text search
+					results = await departmentIndex.search(search, {
 						offset: (page - 1) * pageSize,
 						limit: pageSize
 					});
@@ -86,7 +89,7 @@
 				deptList = results.hits;
 				total = results.estimatedTotalHits ?? results.hits.length;
 			} else {
-				// Không search → lấy từ backend (dữ liệu chắc chắn mới nhất)
+				// Không search → lấy từ backend
 				const response = await axios.get(`${API_URL}/departments`, {
 					params: { page, pageSize },
 					headers: getAuthHeader()
