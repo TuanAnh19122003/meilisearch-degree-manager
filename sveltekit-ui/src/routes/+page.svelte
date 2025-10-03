@@ -10,6 +10,17 @@
 	const error = writable('');
 	const API_URL = import.meta.env.VITE_API_URL;
 	const user = writable(null);
+	let showUserMenu = false;
+
+	function toggleUserMenu() {
+		showUserMenu = !showUserMenu;
+	}
+
+	function logout() {
+		localStorage.removeItem('user');
+		user.set(null);
+		showUserMenu = false;
+	}
 
 	onMount(() => {
 		const userData = localStorage.getItem('user');
@@ -220,10 +231,15 @@
 			<div class="hidden rounded bg-gray-50 p-4 text-sm text-gray-500 md:block">
 				Nhập mã sinh viên hoặc số certificate để tra cứu nhanh. Kết quả sẽ hiển thị bên trái.
 			</div>
-			<div class="mt-2 flex flex-col gap-2">
+
+			<div class="mt-2 flex flex-col gap-2 relative">
 				{#if $user}
-					<!-- Nếu đã login: avatar + tên + role + nút Trang người dùng -->
-					<div class="flex items-center gap-3 rounded bg-gray-100 p-3">
+					<!-- svelte-ignore a11y_no_static_element_interactions -->
+					<!-- svelte-ignore a11y_click_events_have_key_events -->
+					<div
+						class="flex cursor-pointer items-center gap-3 rounded bg-gray-100 p-3"
+						on:click={toggleUserMenu}
+					>
 						<img
 							src={`http://localhost:5000/${$user.image}`}
 							alt="avatar"
@@ -234,12 +250,26 @@
 							<p class="text-sm text-gray-500">{$user.role?.name || 'User'}</p>
 						</div>
 					</div>
-					<a
-						href="http://localhost:5173/admin"
-						class="mt-2 w-full rounded bg-blue-500 px-4 py-2 text-center font-medium text-white transition hover:bg-blue-600 md:w-auto"
-					>
-						Trang người dùng
-					</a>
+
+					<!-- Dropdown menu -->
+					{#if showUserMenu}
+						<div
+							class="absolute right-0 z-10 mt-1 w-48 rounded border border-gray-200 bg-white shadow-lg"
+						>
+							<a
+								href="http://localhost:5173/admin"
+								class="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+							>
+								Trang người dùng
+							</a>
+							<button
+								class="w-full px-4 py-2 text-left text-red-500 hover:bg-gray-100"
+								on:click={logout}
+							>
+								Đăng xuất
+							</button>
+						</div>
+					{/if}
 				{:else}
 					<!-- Nếu chưa login: giữ nguyên Đăng nhập / Login với Google -->
 					<a
