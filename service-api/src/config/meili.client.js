@@ -28,9 +28,9 @@ const majorIndex = client.index('majors');
     await studentIndex.updateFilterableAttributes(['code', 'email']);
 
     // Certificate
-    await certificateIndex.updateSearchableAttributes(['number', 'type', 'issuer']);
+    await certificateIndex.updateSearchableAttributes(['number', 'type', 'issuer', 'student.firstname', 'student.lastname', 'student.code']);
     await certificateIndex.updateDisplayedAttributes(['id', 'number', 'type', 'grad_date', 'issuer', 'status', 'file_url', 'student']);
-    await certificateIndex.updateFilterableAttributes(['number', 'status', 'student.code']);
+    await certificateIndex.updateFilterableAttributes(['number', 'status', 'student.code', 'student.firstname', 'student.lastname']);
 
     // Course
     await courseIndex.updateSearchableAttributes(['name', 'code']);

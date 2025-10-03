@@ -68,20 +68,27 @@
 			if ((search || searchStatus) && certIndex) {
 				const filters: string[] = [];
 
-				if (search) {
-					filters.push(`number = "${search}" OR student.code = "${search}"`);
-				}
 				if (searchStatus) {
 					filters.push(`status = "${searchStatus}"`);
 				}
 
-				const filterQuery = filters.length ? filters.join(' AND ') : undefined;
-
-				const results = await certIndex.search(search || '', {
-					filter: filterQuery,
+				// search chính
+				let results = await certIndex.search(search || '', {
+					filter: filters.length ? filters.join(' AND ') : undefined,
 					offset: (page - 1) * pageSize,
 					limit: pageSize
 				});
+
+				if (search) {
+					const exactResults = await certIndex.search('', {
+						filter: `number = "${search}" OR student.code = "${search}"`,
+						limit: 2 
+					});
+
+					if (exactResults.hits.length === 1) {
+						results = exactResults;
+					}
+				}
 
 				certList = results.hits;
 				total = results.estimatedTotalHits ?? results.hits.length;
