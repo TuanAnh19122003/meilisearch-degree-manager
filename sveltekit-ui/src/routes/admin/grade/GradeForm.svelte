@@ -2,6 +2,7 @@
 	import { createEventDispatcher, onMount } from 'svelte';
 	import axios from 'axios';
 	import { toast } from 'svelte-sonner';
+	import { MeiliSearch } from 'meilisearch';
 
 	export let initialValues = { studentId: '', courseId: '', grade: '' };
 
@@ -13,9 +14,18 @@
 	const API_URL = import.meta.env.VITE_API_URL;
 	let token = '';
 
+	// Meilisearch
+	let studentIndex: any;
+	let search = '';
+	let loading = false;
+	let searchTimeout: NodeJS.Timeout;
+
+	// Pagination (tạm thời)
+	let pagination = { current: 1, pageSize: 50, total: 0 };
+
 	onMount(async () => {
 		token = localStorage.getItem('token') || '';
-		await fetchStudents();
+		await initSearch(); // Initialize Meilisearch & load students
 		await fetchCourses();
 	});
 
@@ -23,13 +33,71 @@
 		return token ? { Authorization: `Bearer ${token}` } : {};
 	}
 
-	async function fetchStudents() {
+	async function initSearch() {
 		try {
-			const res = await axios.get(`${API_URL}/students`, { headers: getAuthHeader() });
-			students = res.data.data;
-			console.log(students);
-		} catch {
-			toast.error('Lỗi tải danh sách sinh viên');
+			const res = await fetch(`${API_URL}/meili/public-key`);
+			const data = await res.json();
+			if (!data.success) throw new Error('Không lấy được Meilisearch public key');
+
+			const client = new MeiliSearch({
+				host: import.meta.env.VITE_MEILI_HOST,
+				apiKey: data.publicKey
+			});
+			studentIndex = client.index('students');
+			await fetchStudents();
+		} catch (err) {
+			console.error(err);
+			toast.error('Không kết nối được Meilisearch');
+		}
+	}
+
+	function handleSearchInput() {
+		clearTimeout(searchTimeout);
+		searchTimeout = setTimeout(() => fetchStudents(1, pagination.pageSize), 400);
+	}
+
+	async function fetchStudents(page = 1, pageSize = 50) {
+		loading = true;
+		try {
+			let studentList: any[] = [];
+			let total = 0;
+
+			if (search && studentIndex) {
+				const filters: string[] = [];
+				if (/^[A-Z]{2,}\d+$/.test(search)) filters.push(`code = "${search}"`);
+				else if (/\S+@\S+\.\S+/.test(search)) filters.push(`email = "${search}"`);
+
+				const results = await studentIndex.search(search || '', {
+					filter: filters.length ? filters.join(' AND ') : undefined,
+					offset: (page - 1) * pageSize,
+					limit: pageSize
+				});
+
+				studentList = results.hits.map((s: any) => ({ ...s, major: s.major || { name: '-' } }));
+				total = results.estimatedTotalHits ?? results.hits.length;
+			} else {
+				const res = await axios.get(`${API_URL}/students`, {
+					params: { page, pageSize, keyword: search },
+					headers: getAuthHeader()
+				});
+				const { success, data, total: totalRes, message } = res.data;
+				if (success) {
+					studentList = data.map((s: any) => ({ ...s, major: s.major || { name: '-' } }));
+					total = totalRes ?? data.length;
+				} else {
+					toast.error(message || 'Lỗi tải danh sách sinh viên');
+					studentList = [];
+					total = 0;
+				}
+			}
+
+			students = studentList;
+			pagination = { current: page, pageSize, total };
+		} catch (err) {
+			console.error(err);
+			toast.error('Lỗi khi tải dữ liệu sinh viên');
+		} finally {
+			loading = false;
 		}
 	}
 
@@ -57,18 +125,36 @@
 </script>
 
 <form class="space-y-4" on:submit|preventDefault={handleSubmit}>
-	<div>
+	<div class="relative">
 		<label for="" class="mb-1 block font-medium">Sinh viên</label>
-		<select
-			bind:value={formData.studentId}
+		<input
+			type="text"
+			placeholder="Tìm sinh viên..."
+			bind:value={search}
 			class="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500"
-			required
-		>
-			<option value="" disabled>-- Chọn sinh viên --</option>
-			{#each students as s}
-				<option value={s.id}>{s.lastname} {s.firstname}</option>
-			{/each}
-		</select>
+			on:input={handleSearchInput}
+		/>
+
+		{#if search && students.length > 0}
+			<ul
+				class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg border bg-white shadow-lg"
+			>
+				{#each students as s (s.id)}
+					<!-- svelte-ignore a11y_click_events_have_key_events -->
+					<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+					<li
+						class="cursor-pointer px-3 py-2 hover:bg-blue-100"
+						on:click={() => {
+							formData.studentId = s.id;
+							search = `${s.lastname} ${s.firstname}`;
+							students = [];
+						}}
+					>
+						<div>{s.lastname} {s.firstname}</div>
+					</li>
+				{/each}
+			</ul>
+		{/if}
 	</div>
 
 	<div>
