@@ -1,7 +1,7 @@
 // meili.routes.js
 const express = require('express');
 const router = express.Router();
-const { client, studentIndex } = require('../config/meili.client');
+const { client, studentIndex, certificateIndex } = require('../config/meili.client');
 
 // Lấy public key cho frontend
 router.get('/public-key', async (req, res) => {
@@ -10,7 +10,7 @@ router.get('/public-key', async (req, res) => {
         const key = await client.createKey({
             description: 'Public key for frontend',
             actions: ['search'],
-            indexes: ['roles', 'users', 'students', 'certificates', 'courses', 'departments','majors'],
+            indexes: ['roles', 'users', 'students', 'certificates', 'courses', 'departments', 'majors'],
             expiresAt: null
         });
         res.json({ success: true, publicKey: key.key });
@@ -231,6 +231,67 @@ router.get('/major', async (req, res) => {
             message: 'Lỗi khi tìm major',
             error: err.message
         });
+    }
+});
+
+router.get('/search', async (req, res) => {
+    try {
+        const { q } = req.query;
+        if (!q) return res.status(400).json({ success: false, message: 'Thiếu query q' });
+
+        let students = [];
+        let certificates = [];
+
+        const isCertNumber = /^CERT-\d{6,}$/.test(q);
+
+        if (isCertNumber) {
+            // Nếu q là số certificate thì chỉ search certificate
+            const exactCerts = await certificateIndex.search('', { filter: `number = "${q}"`, limit: 50 });
+            certificates = exactCerts.hits || [];
+        } else {
+            // Trường hợp q là student code/email
+            const exactStudentFilter = `code = "${q}" OR email = "${q}"`;
+            const exactCertFilter = `number = "${q}"`;
+
+            const exactStudents = await studentIndex.search('', { filter: exactStudentFilter, limit: 20 });
+            const exactCerts = await certificateIndex.search('', { filter: exactCertFilter, limit: 50 });
+
+            students = exactStudents.hits || [];
+            certificates = exactCerts.hits || [];
+
+            // --- Full-text search nếu không tìm thấy ---
+            if (students.length === 0 && certificates.length === 0) {
+                const studentFullText = await studentIndex.search(q, { limit: 20 });
+                const certFullText = await certificateIndex.search(q, { limit: 50 });
+
+                students = studentFullText.hits || [];
+                certificates = certFullText.hits || [];
+
+                // Nếu tìm được student từ full-text, lấy certificate liên quan
+                if (students.length > 0) {
+                    const studentCodes = students.map(s => `"${s.code}"`).join(',');
+                    const certsByStudent = await certificateIndex.search('', { filter: `student.code IN [${studentCodes}]`, limit: 50 });
+                    certificates = certsByStudent.hits || [];
+                    students.forEach(s => {
+                        s.certificates = certificates.filter(c => c.student.code === s.code);
+                    });
+                }
+            } else if (students.length > 0) {
+                // Nếu tìm được student bằng filter, gán certificate
+                const studentCodes = students.map(s => `"${s.code}"`).join(',');
+                const certsByStudent = await certificateIndex.search('', { filter: `student.code IN [${studentCodes}]`, limit: 50 });
+                certificates = certsByStudent.hits || [];
+                students.forEach(s => {
+                    s.certificates = certificates.filter(c => c.student.code === s.code);
+                });
+            }
+        }
+
+        res.json({ success: true, student: students, certificates });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Lỗi khi tìm', error: err.message });
     }
 });
 
