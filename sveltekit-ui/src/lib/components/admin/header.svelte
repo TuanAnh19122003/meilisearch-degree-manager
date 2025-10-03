@@ -20,7 +20,7 @@
 		showToast.set(true);
 		setTimeout(() => {
 			showToast.set(false);
-			goto('/auth/login');
+			goto('http://localhost:5173');
 		}, 2000);
 	}
 
@@ -66,20 +66,27 @@
 			<div
 				class="animate-fadeIn absolute right-0 z-50 mt-2 w-52 rounded-xl border border-gray-200 bg-white text-gray-700 shadow-lg"
 			>
-				<button class="flex w-full px-4 py-3 text-left hover:bg-gray-100" on:click={goToProfile}
-					>Thông tin cá nhân</button
+				<button class="flex w-full px-4 py-3 text-left hover:bg-gray-100" on:click={goToProfile}>
+					Thông tin cá nhân
+				</button>
+				<button class="flex w-full px-4 py-3 text-left hover:bg-gray-100" on:click={goToSettings}>
+					Cài đặt
+				</button>
+				<a
+					href="http://localhost:5173"
+					class="flex w-full px-4 py-3 text-left font-medium text-blue-600 hover:bg-gray-100"
 				>
-				<button class="flex w-full px-4 py-3 text-left hover:bg-gray-100" on:click={goToSettings}
-					>Cài đặt</button
-				>
-				<button class="flex w-full px-4 py-3 text-left hover:bg-gray-100" on:click={goToSearch}
-					>Tìm kiếm</button
-				>
+					Trang người dùng
+				</a>
+
 				<hr class="border-gray-200" />
+
 				<button
 					class="flex w-full px-4 py-3 text-left font-bold text-red-600 hover:bg-red-100"
-					on:click={logout}>Đăng xuất</button
+					on:click={logout}
 				>
+					Đăng xuất
+				</button>
 			</div>
 		{/if}
 	</div>

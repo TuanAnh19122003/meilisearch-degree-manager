@@ -125,6 +125,11 @@ class CertificateService {
     // Lấy recent certificates
     static async recent(limit = 5) {
         const all = await Certificate.findAll({
+            include: {
+                model: require('../models/student.model'),
+                as: 'student',
+                attributes: ['id', 'lastname', 'firstname', 'dob', 'code']
+            },
             order: [['createdAt', 'DESC']],
             limit
         });
