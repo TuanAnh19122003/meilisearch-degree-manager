@@ -2,6 +2,8 @@
 	import { writable } from 'svelte/store';
 	import axios from 'axios';
 	import { onMount } from 'svelte';
+	import { slide } from 'svelte/transition';
+	import { pageTitle } from '$lib/stores/pageTitle';
 
 	let query = '';
 	const students = writable([]);
@@ -11,7 +13,7 @@
 	const API_URL = import.meta.env.VITE_API_URL;
 	const user = writable(null);
 	let showUserMenu = false;
-
+	pageTitle.set('Tra cứu văn bằng');
 	function toggleUserMenu() {
 		showUserMenu = !showUserMenu;
 	}
@@ -77,7 +79,6 @@
 		return `${student.firstname?.[0] || ''}${student.lastname?.[0] || ''}`.toUpperCase();
 	}
 
-	// --- Scroll khi focus input (chỉ client) ---
 	function scrollToInput() {
 		if (typeof window !== 'undefined' && document.activeElement) {
 			setTimeout(() => {
@@ -99,43 +100,71 @@
 			{#if $students.length || $certificates.length}
 				{#if $students.length}
 					<h2 class="mb-2 text-lg font-semibold">Sinh viên</h2>
-					<div class="space-y-2">
+					<div class="space-y-3">
 						{#each $students as s}
-							<div
-								class="flex flex-col rounded border border-gray-200 p-2 sm:flex-row sm:items-center sm:justify-between"
-							>
-								<div class="flex items-center gap-2">
-									{#if s.image}
-										<img
-											src={`http://localhost:5000/${s.image}`}
-											alt={`Ảnh của ${s.firstname} ${s.lastname}`}
-											class="h-10 w-10 rounded-full object-cover"
-										/>
-									{:else}
-										<div
-											class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-400 font-bold text-white"
-										>
-											{getInitials(s)}
+							<div class="rounded border border-gray-200 p-3 shadow-sm transition hover:shadow-md">
+								<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+									<div class="flex items-center gap-3">
+										{#if s.image}
+											<img
+												src={`http://localhost:5000/${s.image}`}
+												alt={`Ảnh của ${s.firstname} ${s.lastname}`}
+												class="h-10 w-10 rounded-full object-cover"
+											/>
+										{:else}
+											<div
+												class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 font-bold text-white"
+											>
+												{getInitials(s)}
+											</div>
+										{/if}
+										<div>
+											<p class="font-medium">{s.firstname} {s.lastname}</p>
+											<p class="text-sm text-gray-500">{s.code}</p>
 										</div>
-									{/if}
-									<div>
-										<p class="font-medium">{s.firstname} {s.lastname}</p>
-										<p class="text-sm text-gray-500">{s.code}</p>
 									</div>
+
+									<!-- Nút Chi tiết -->
+									<button
+										class="flex items-center gap-1 text-sm text-blue-600 transition hover:text-blue-800 sm:mt-0"
+										on:click={() => toggleStudent(s.id)}
+									>
+										{openStudent.includes(s.id) ? 'Thu gọn' : 'Chi tiết'}
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											class="h-4 w-4"
+											fill="none"
+											viewBox="0 0 24 24"
+											stroke="currentColor"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d={openStudent.includes(s.id) ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'}
+											/>
+										</svg>
+									</button>
 								</div>
-								<button
-									class="mt-2 text-sm text-blue-500 sm:mt-0"
-									on:click={() => toggleStudent(s.id)}
-								>
-									{openStudent.includes(s.id) ? 'Thu gọn' : 'Chi tiết'}
-								</button>
+
 								{#if openStudent.includes(s.id)}
-									<div class="mt-2 space-y-1 text-sm text-gray-700 sm:mt-4">
-										<p>Email: {s.email}</p>
-										<p>Phone: {s.phone}</p>
-										<p>Major: {s.major?.name || '-'}</p>
-										<p>GPA: {s.gpa || '-'}</p>
-										<p>Học lực: {s.hoc_luc}</p>
+									<div
+										transition:slide
+										class="mt-3 rounded-lg bg-gray-50 p-3 text-sm text-gray-700 shadow-inner sm:p-4"
+									>
+										<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+											<p><span class="font-medium text-gray-600">Email:</span> {s.email || '-'}</p>
+											<p><span class="font-medium text-gray-600">SĐT:</span> {s.phone || '-'}</p>
+											<p>
+												<span class="font-medium text-gray-600">Chuyên ngành:</span>
+												{s.major?.name || '-'}
+											</p>
+											<p><span class="font-medium text-gray-600">GPA:</span> {s.gpa || '-'}</p>
+											<p>
+												<span class="font-medium text-gray-600">Học lực:</span>
+												{s.hoc_luc || '-'}
+											</p>
+										</div>
 									</div>
 								{/if}
 							</div>
@@ -144,41 +173,72 @@
 				{/if}
 
 				{#if $certificates.length}
-					<h2 class="mt-4 mb-2 text-lg font-semibold">Văn bằng</h2>
-					<div class="space-y-2">
+					<h2 class="mt-6 mb-2 text-lg font-semibold">Văn bằng</h2>
+					<div class="space-y-3">
 						{#each $certificates as c}
-							<div
-								class="flex flex-col rounded border border-gray-200 p-2 sm:flex-row sm:items-center sm:justify-between"
-							>
-								<div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-									<p class="font-medium">{c.number}</p>
-									<p class="text-sm text-gray-500 sm:ml-4">{c.type} - {c.status}</p>
-									<p class="text-sm text-gray-500 sm:ml-4">
-										{c.student?.firstname}{c.student?.lastname} ({c.student?.code})
-									</p>
-								</div>
-								<button
-									class="mt-2 text-sm text-blue-500 sm:mt-0"
-									on:click={() => toggleCert(c.id)}
-								>
-									{openCert.includes(c.id) ? 'Thu gọn' : 'Chi tiết'}
-								</button>
-								{#if openCert.includes(c.id)}
-									<div class="mt-2 space-y-1 text-sm text-gray-700 sm:mt-4">
-										<p>Ngày tốt nghiệp: {c.grad_date}</p>
-										<p>Issuer: {c.issuer}</p>
-										<p>
-											File:
-											{#if c.file_url}
-												<a
-													href={c.file_url}
-													class="text-blue-500"
-													target="_blank"
-													rel="noopener noreferrer"
-													aria-label={`Xem file văn bằng ${c.number}`}>Xem file</a
-												>
-											{:else}Chưa có{/if}
+							<div class="rounded border border-gray-200 p-3 shadow-sm transition hover:shadow-md">
+								<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+									<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+										<p class="font-medium">{c.number}</p>
+										<p class="text-sm text-gray-500">{c.type} - {c.status}</p>
+										<p class="text-sm text-gray-500">
+											{c.student?.firstname}{c.student?.lastname} ({c.student?.code})
 										</p>
+									</div>
+
+									<button
+										class="flex items-center gap-1 text-sm text-blue-600 transition hover:text-blue-800 sm:mt-0"
+										on:click={() => toggleCert(c.id)}
+									>
+										{openCert.includes(c.id) ? 'Thu gọn' : 'Chi tiết'}
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											class="h-4 w-4"
+											fill="none"
+											viewBox="0 0 24 24"
+											stroke="currentColor"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d={openCert.includes(c.id) ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'}
+											/>
+										</svg>
+									</button>
+								</div>
+
+								{#if openCert.includes(c.id)}
+									<div
+										transition:slide
+										class="mt-3 rounded-lg bg-gray-50 p-3 text-sm text-gray-700 shadow-inner sm:p-4"
+									>
+										<div class="space-y-1">
+											<p>
+												<span class="font-medium text-gray-600">Ngày tốt nghiệp:</span>
+												{c.grad_date || '-'}
+											</p>
+											<p>
+												<span class="font-medium text-gray-600">Người cấp:</span>
+												{c.issuer || '-'}
+											</p>
+											<p>
+												<span class="font-medium text-gray-600">File văn bằng:</span>
+												{#if c.file_url}
+													<a
+														href={c.file_url}
+														class="ml-1 text-blue-600 underline transition hover:text-blue-800"
+														target="_blank"
+														rel="noopener noreferrer"
+														aria-label={`Xem file văn bằng ${c.number}`}
+													>
+														Xem file
+													</a>
+												{:else}
+													<span class="ml-1 text-gray-400">Chưa có</span>
+												{/if}
+											</p>
+										</div>
 									</div>
 								{/if}
 							</div>
@@ -214,7 +274,7 @@
 					type="text"
 					bind:value={query}
 					placeholder="Nhập mã sinh viên hoặc số certificate"
-					class="w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-300 focus:ring focus:outline-none"
+					class="w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-400 focus:ring focus:outline-none"
 					on:input={debounceSearch}
 					on:focus={scrollToInput}
 				/>
@@ -222,22 +282,20 @@
 				{#if $error}<p class="mt-2 text-red-500">{$error}</p>{/if}
 			</div>
 
-			<!-- Mobile -->
 			<div class="rounded bg-gray-50 p-4 text-sm text-gray-500 md:hidden">
 				Nhập mã sinh viên hoặc số certificate để tra cứu nhanh.
 			</div>
 
-			<!-- Desktop -->
 			<div class="hidden rounded bg-gray-50 p-4 text-sm text-gray-500 md:block">
 				Nhập mã sinh viên hoặc số certificate để tra cứu nhanh. Kết quả sẽ hiển thị bên trái.
 			</div>
 
-			<div class="mt-2 flex flex-col gap-2 relative">
+			<div class="relative mt-2 flex flex-col gap-2">
 				{#if $user}
-					<!-- svelte-ignore a11y_no_static_element_interactions -->
 					<!-- svelte-ignore a11y_click_events_have_key_events -->
+					<!-- svelte-ignore a11y_no_static_element_interactions -->
 					<div
-						class="flex cursor-pointer items-center gap-3 rounded bg-gray-100 p-3"
+						class="flex cursor-pointer items-center gap-3 rounded bg-gray-100 p-3 transition hover:bg-gray-200"
 						on:click={toggleUserMenu}
 					>
 						<img
@@ -251,7 +309,6 @@
 						</div>
 					</div>
 
-					<!-- Dropdown menu -->
 					{#if showUserMenu}
 						<div
 							class="absolute right-0 z-10 mt-1 w-48 rounded border border-gray-200 bg-white shadow-lg"
@@ -271,7 +328,6 @@
 						</div>
 					{/if}
 				{:else}
-					<!-- Nếu chưa login: giữ nguyên Đăng nhập / Login với Google -->
 					<a
 						href="/auth/login"
 						class="w-full rounded bg-blue-500 px-4 py-2 text-center font-medium text-white transition hover:bg-blue-600 md:w-auto"
