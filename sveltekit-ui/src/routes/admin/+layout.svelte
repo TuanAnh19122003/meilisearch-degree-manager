@@ -8,6 +8,8 @@
 	import { goto } from '$app/navigation';
 	import { Toaster } from 'svelte-sonner';
 
+	export let children;
+
 	let collapsed = false;
 
 	const fullTitle = derived(pageTitle, ($pageTitle) => ($pageTitle ? `${$pageTitle}` : 'Admin'));
@@ -60,7 +62,7 @@
 		<Sidebar bind:collapsed />
 
 		<main class="flex-1 overflow-auto bg-gray-100 p-6">
-			<slot />
+			{@render children?.()}
 		</main>
 	</div>
 

@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 	import { slide } from 'svelte/transition';
 	import { pageTitle } from '$lib/stores/pageTitle';
+	import { fade } from 'svelte/transition';
 
 	let query = '';
 	const students = writable([]);
@@ -291,74 +292,93 @@
 			</div>
 
 			<div class="relative mt-2 flex flex-col gap-2">
-				{#if $user}
-					<!-- svelte-ignore a11y_click_events_have_key_events -->
-					<!-- svelte-ignore a11y_no_static_element_interactions -->
-					<div
-						class="flex cursor-pointer items-center gap-3 rounded bg-gray-100 p-3 transition hover:bg-gray-200"
-						on:click={toggleUserMenu}
-					>
-						<img
-							src={`http://localhost:5000/${$user.image}`}
-							alt="avatar"
-							class="h-10 w-10 rounded-full object-cover"
-						/>
-						<div>
-							<p class="font-medium text-gray-800">{$user.firstname} {$user.lastname}</p>
-							<p class="text-sm text-gray-500">{$user.role?.name || 'User'}</p>
-						</div>
-					</div>
-
-					{#if showUserMenu}
-						<div
-							class="absolute right-0 z-10 mt-1 w-48 rounded border border-gray-200 bg-white shadow-lg"
+				{#if $user && !$students.length && !$certificates.length}
+					<!-- User menu -->
+					<div transition:fade={{ duration: 200 }}>
+						<button
+							type="button"
+							class="flex w-full items-center gap-3 rounded bg-gray-100 p-3 transition hover:bg-gray-200"
+							on:click={toggleUserMenu}
+							aria-haspopup="true"
+							aria-expanded={showUserMenu}
 						>
-							<a
-								href="http://localhost:5173/admin"
-								class="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-							>
-								Trang người dùng
-							</a>
-							<button
-								class="w-full px-4 py-2 text-left text-red-500 hover:bg-gray-100"
-								on:click={logout}
-							>
-								Đăng xuất
-							</button>
-						</div>
-					{/if}
-				{:else}
-					<a
-						href="/auth/login"
-						class="w-full rounded bg-blue-500 px-4 py-2 text-center font-medium text-white transition hover:bg-blue-600 md:w-auto"
-					>
-						Đăng nhập
-					</a>
+							{#if $user.image}
+								<img
+									src={`http://localhost:5000/${$user.image}`}
+									alt="avatar"
+									class="h-10 w-10 rounded-full object-cover"
+								/>
+							{:else}
+								<div
+									class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-500 font-bold text-white"
+								>
+									{$user.firstname?.[0]}{$user.lastname?.[0]}
+								</div>
+							{/if}
 
-					<button
-						class="flex w-full items-center justify-center gap-2 rounded border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100 md:w-auto"
-						on:click={() => console.log('Login với Google')}
-					>
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 48 48">
-							<path
-								fill="#EA4335"
-								d="M24 9.5c3.2 0 5.9 1.1 8 2.9l6-6C34.5 2.4 29.5 0 24 0 14 0 5.7 6 2.4 14.5l7.2 5.6C12.4 15.1 17.8 9.5 24 9.5z"
-							/>
-							<path
-								fill="#34A853"
-								d="M46.5 24c0-1.5-.1-2.9-.4-4.3H24v8.1h12.6c-.5 2.4-2 4.5-4.2 5.9l6.5 5C43.9 35.5 46.5 30.2 46.5 24z"
-							/>
-							<path
-								fill="#4A90E2"
-								d="M10 29.1l-7.2 5.6C5.7 42 14 48 24 48c6.5 0 12.5-2.4 17-6.5l-6.5-5C29.5 41.1 26 42 24 42c-6.2 0-11.6-4.6-12.8-10.9z"
-							/>
-							<path
-								fill="#FBBC05"
-								d="M2.4 14.5C.8 19.5 0 24 0 24s0 4.5 2.4 9l7.2-5.6C8.6 28.5 8 26 8 24s.6-4.5 1.6-6.5z"
-							/>
-						</svg>
-						Đăng nhập với Google
-					</button>
+							<div class="text-left">
+								<p class="font-medium text-gray-800">{$user.firstname} {$user.lastname}</p>
+								<p class="text-sm text-gray-500">{$user.role?.name || 'User'}</p>
+							</div>
+						</button>
+
+						{#if showUserMenu}
+							<div
+								class="absolute right-0 z-10 mt-1 w-48 rounded border border-gray-200 bg-white shadow-lg"
+								transition:fade={{ duration: 200 }}
+							>
+								<a
+									href="http://localhost:5173/admin"
+									class="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+								>
+									Trang người dùng
+								</a>
+								<button
+									type="button"
+									class="w-full px-4 py-2 text-left text-red-500 hover:bg-gray-100"
+									on:click={logout}
+								>
+									Đăng xuất
+								</button>
+							</div>
+						{/if}
+					</div>
+				{:else if !$students.length && !$certificates.length}
+					<!-- Đăng nhập chỉ hiện khi chưa có kết quả tra cứu -->
+					<div transition:fade={{ duration: 200 }} class="flex flex-col gap-2">
+						<a
+							href="/auth/login"
+							class="w-full rounded bg-blue-500 px-4 py-2 text-center font-medium text-white transition hover:bg-blue-600 md:w-auto"
+						>
+							Đăng nhập
+						</a>
+
+						<button
+							type="button"
+							class="flex w-full items-center justify-center gap-2 rounded border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100 md:w-auto"
+							on:click={() => console.log('Login với Google')}
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 48 48">
+								<path
+									fill="#EA4335"
+									d="M24 9.5c3.2 0 5.9 1.1 8 2.9l6-6C34.5 2.4 29.5 0 24 0 14 0 5.7 6 2.4 14.5l7.2 5.6C12.4 15.1 17.8 9.5 24 9.5z"
+								/>
+								<path
+									fill="#34A853"
+									d="M46.5 24c0-1.5-.1-2.9-.4-4.3H24v8.1h12.6c-.5 2.4-2 4.5-4.2 5.9l6.5 5C43.9 35.5 46.5 30.2 46.5 24z"
+								/>
+								<path
+									fill="#4A90E2"
+									d="M10 29.1l-7.2 5.6C5.7 42 14 48 24 48c6.5 0 12.5-2.4 17-6.5l-6.5-5C29.5 41.1 26 42 24 42c-6.2 0-11.6-4.6-12.8-10.9z"
+								/>
+								<path
+									fill="#FBBC05"
+									d="M2.4 14.5C.8 19.5 0 24 0 24s0 4.5 2.4 9l7.2-5.6C8.6 28.5 8 26 8 24s.6-4.5 1.6-6.5z"
+								/>
+							</svg>
+							Đăng nhập với Google
+						</button>
+					</div>
 				{/if}
 			</div>
 		</div>

@@ -58,7 +58,7 @@
 					alt="avatar"
 					class="h-9 w-9 rounded-full"
 				/>
-				<span>{$user.lastname} {$user.firstname}</span>
+				<span>{$user.firstname} {$user.lastname}</span>
 			{/if}
 		</button>
 
