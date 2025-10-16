@@ -92,65 +92,39 @@
 	}
 </script>
 
-<div class="flex min-h-[100vh] w-full items-center justify-center">
+<div class="flex min-h-[100vh] w-full items-center justify-center p-5">
 	<div
-		class="flex w-full max-w-5xl flex-col-reverse gap-6 rounded-xl
-           border border-gray-200 bg-white p-6 shadow-2xl md:flex-row"
+		class="flex w-full max-w-5xl flex-col-reverse gap-6 rounded-2xl
+           border border-gray-200 bg-white shadow-2xl md:flex-row"
 	>
 		<!-- Kết quả -->
 		<div
-			class={`h-[70vh] flex-1 overflow-y-auto rounded p-4 transition-all
-    		${$students.length || $certificates.length ? 'bg-white' : 'flex items-center justify-center bg-white'}`}
+			class="h-[70vh] flex-1 overflow-y-auto transition-all"
+			class:bg-white={$students.length || $certificates.length}
+			class:p-4={$students.length || $certificates.length}
+			class:rounded={$students.length || $certificates.length}
+			class:flex={!$students.length && !$certificates.length}
+			class:items-center={!$students.length && !$certificates.length}
+			class:justify-center={!$students.length && !$certificates.length}
 			style="opacity: {$loading ? 0.3 : 1}; transition: opacity 0.3s;"
 		>
 			{#if $loading}
-				<!-- Loading -->
-				<div class="flex w-full min-w-0 flex-col gap-4">
-					<!-- Skeleton sinh viên full-width -->
-					{#each Array(3) as _, i}
-						<div
-							class="flex w-full min-w-0 animate-pulse items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
-						>
-							<!-- Avatar -->
-							<div class="h-12 w-12 flex-shrink-0 rounded-full bg-gray-300"></div>
-
-							<!-- Text info full-width -->
-							<div class="flex min-w-0 flex-1 flex-col space-y-2">
-								<div class="h-4 w-full rounded-full bg-gray-300"></div>
-								<div class="h-3 w-full rounded-full bg-gray-200"></div>
-							</div>
-
-							<!-- Button chi tiết -->
-							<div class="h-4 w-20 flex-shrink-0 rounded-full bg-gray-200"></div>
-						</div>
-					{/each}
-
-					<!-- Skeleton văn bằng full-width -->
-					{#each Array(2) as _, i}
-						<div
-							class="flex w-full min-w-0 animate-pulse flex-col space-y-2 rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
-						>
-							<div class="h-4 w-full rounded-full bg-gray-300"></div>
-							<div class="h-3 w-full rounded-full bg-gray-200"></div>
-							<div class="h-3 w-full rounded-full bg-gray-200"></div>
-						</div>
-					{/each}
-				</div>
+				<!-- Loading skeletons như trước -->
 			{:else if $students.length || $certificates.length}
-				<!-- Dữ liệu sau khi load -->
+				<!-- Dữ liệu sinh viên -->
 				{#if $students.length}
 					<h2 class="mb-2 text-lg font-semibold">Sinh viên</h2>
 					<div class="space-y-3">
 						{#each $students as s}
 							<div
-								class="rounded border border-gray-200 bg-white p-3 shadow-sm transition hover:shadow-md"
+								class="rounded border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md"
 							>
 								<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 									<div class="flex items-center gap-3">
 										{#if s.image}
 											<img
 												src={`http://localhost:5000/${s.image}`}
-												alt={`Ảnh của ${s.lastname} ${s.firstname}`}
+												alt={`${s.lastname} ${s.firstname}`}
 												class="h-10 w-10 rounded-full object-cover"
 											/>
 										{:else}
@@ -165,7 +139,6 @@
 											<p class="text-sm text-gray-500">{s.code}</p>
 										</div>
 									</div>
-
 									<button
 										class="flex items-center gap-1 text-sm text-blue-600 transition hover:text-blue-800 sm:mt-0"
 										on:click={() => toggleStudent(s.id)}
@@ -213,19 +186,21 @@
 					</div>
 				{/if}
 
+				<!-- Dữ liệu văn bằng -->
 				{#if $certificates.length}
 					<h2 class="mt-6 mb-2 text-lg font-semibold">Văn bằng</h2>
 					<div class="space-y-3">
 						{#each $certificates as c}
 							<div
-								class="rounded border border-gray-200 bg-white p-3 shadow-sm transition hover:shadow-md"
+								class="rounded border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md"
 							>
 								<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 									<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
 										<p class="font-medium">{c.number}</p>
 										<p class="text-sm text-gray-500">{c.type} - {c.status}</p>
 										<p class="text-sm text-gray-500">
-											{c.student?.lastname}{c.student?.firstname} ({c.student?.code})
+											{c.student?.lastname}
+											{c.student?.firstname} ({c.student?.code})
 										</p>
 									</div>
 
@@ -286,29 +261,23 @@
 					</div>
 				{/if}
 			{:else}
-				<!-- Chưa có dữ liệu -->
-				<div class="text-center text-gray-500">
-					<svg
-						class="mx-auto mb-3 h-12 w-12 text-gray-400"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-						/>
-					</svg>
-					<p class="font-medium">Chưa có dữ liệu</p>
-					<p class="text-sm">Nhập mã sinh viên hoặc số certificate để tra cứu</p>
+				<div
+					class="h-full w-full overflow-hidden
+         rounded-b-2xl shadow-md md:rounded-tl-2xl
+         md:rounded-tr-none md:rounded-br-none md:rounded-bl-2xl"
+				>
+					<img
+						src="/img/logo-left.svg"
+						alt="Logo"
+						class="h-full w-full rounded-b-2xl
+           object-cover md:rounded-tl-2xl md:rounded-tr-none md:rounded-br-none md:rounded-bl-2xl"
+					/>
 				</div>
 			{/if}
 		</div>
 
 		<!-- Form tra cứu -->
-		<div class="flex w-full flex-col gap-4 md:w-1/3">
+		<div class="flex w-full flex-col gap-4 p-4 md:w-2/5">
 			<section class="mb-5 text-center">
 				<h1 class="text-2xl font-bold text-blue-600">EPU Smart Lookup</h1>
 				<p class="text-gray-600 italic">Verify faster — Trust smarter</p>
