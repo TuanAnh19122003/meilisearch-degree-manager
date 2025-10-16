@@ -65,6 +65,9 @@
 			const data = res.data;
 			if (!data.success) error.set(data.message || 'Lỗi khi tìm');
 			else {
+				// Thêm delay 300ms trước khi set dữ liệu
+				await new Promise((resolve) => setTimeout(resolve, 300));
+
 				students.set(data.student || []);
 				certificates.set(data.certificates || []);
 			}
@@ -89,21 +92,40 @@
 	}
 </script>
 
-<div class="flex min-h-[90vh] w-full items-center justify-center p-4">
-	<div class="flex w-full max-w-5xl flex-col-reverse gap-6 md:flex-row">
+<div class="flex min-h-[90vh] w-full items-center justify-center bg-gray-50">
+	<div
+		class="flex w-full max-w-5xl flex-col-reverse gap-6 rounded-xl
+           border border-gray-200 bg-white p-6 shadow-2xl md:flex-row"
+	>
 		<!-- Kết quả -->
 		<div
-			class="h-[70vh] flex-1 overflow-y-auto rounded p-4 shadow
-                    {$students.length || $certificates.length
-				? 'bg-white'
-				: 'flex items-center justify-center bg-gray-50'}"
+			class={`h-[70vh] flex-1 overflow-y-auto rounded p-4 transition-all
+    		${$students.length || $certificates.length ? 'bg-white' : 'flex items-center justify-center bg-white'}`}
 		>
-			{#if $students.length || $certificates.length}
+			{#if $loading}
+				<!-- Loading -->
+				<div class="flex h-full flex-col items-center justify-center text-gray-400">
+					<svg
+						class="mb-3 h-8 w-8 animate-spin"
+						xmlns="http://www.w3.org/2000/svg"
+						fill="none"
+						viewBox="0 0 24 24"
+					>
+						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+						></circle>
+						<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+					</svg>
+					<p>Đang tải dữ liệu...</p>
+				</div>
+			{:else if $students.length || $certificates.length}
+				<!-- Dữ liệu sau khi load -->
 				{#if $students.length}
 					<h2 class="mb-2 text-lg font-semibold">Sinh viên</h2>
 					<div class="space-y-3">
 						{#each $students as s}
-							<div class="rounded border border-gray-200 p-3 shadow-sm transition hover:shadow-md">
+							<div
+								class="rounded border border-gray-200 bg-white p-3 shadow-sm transition hover:shadow-md"
+							>
 								<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 									<div class="flex items-center gap-3">
 										{#if s.image}
@@ -125,7 +147,6 @@
 										</div>
 									</div>
 
-									<!-- Nút Chi tiết -->
 									<button
 										class="flex items-center gap-1 text-sm text-blue-600 transition hover:text-blue-800 sm:mt-0"
 										on:click={() => toggleStudent(s.id)}
@@ -177,13 +198,15 @@
 					<h2 class="mt-6 mb-2 text-lg font-semibold">Văn bằng</h2>
 					<div class="space-y-3">
 						{#each $certificates as c}
-							<div class="rounded border border-gray-200 p-3 shadow-sm transition hover:shadow-md">
+							<div
+								class="rounded border border-gray-200 bg-white p-3 shadow-sm transition hover:shadow-md"
+							>
 								<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 									<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
 										<p class="font-medium">{c.number}</p>
 										<p class="text-sm text-gray-500">{c.type} - {c.status}</p>
 										<p class="text-sm text-gray-500">
-											{c.student?.lastname} {c.student?.firstname} ({c.student?.code})
+											{c.student?.lastname}{c.student?.firstname} ({c.student?.code})
 										</p>
 									</div>
 
@@ -230,11 +253,8 @@
 														href={c.file_url}
 														class="ml-1 text-blue-600 underline transition hover:text-blue-800"
 														target="_blank"
-														rel="noopener noreferrer"
-														aria-label={`Xem file văn bằng ${c.number}`}
+														rel="noopener noreferrer">Xem file</a
 													>
-														Xem file
-													</a>
 												{:else}
 													<span class="ml-1 text-gray-400">Chưa có</span>
 												{/if}
@@ -247,6 +267,7 @@
 					</div>
 				{/if}
 			{:else}
+				<!-- Chưa có dữ liệu -->
 				<div class="text-center text-gray-500">
 					<svg
 						class="mx-auto mb-3 h-12 w-12 text-gray-400"
@@ -269,6 +290,11 @@
 
 		<!-- Form tra cứu -->
 		<div class="flex w-full flex-col gap-4 md:w-1/3">
+			<section class="mb-5 text-center">
+				<h1 class="text-2xl font-bold text-blue-600">EPU Smart Lookup</h1>
+				<p class="text-gray-600 italic">Verify faster — Trust smarter</p>
+			</section>
+
 			<div class="rounded bg-white p-4 shadow">
 				<h2 class="mb-2 text-lg font-semibold">Tra cứu</h2>
 				<input
