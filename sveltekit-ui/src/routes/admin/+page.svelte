@@ -4,6 +4,7 @@
 	import { FileText, Users, FileCheck } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 	import Chart from '$lib/Chart.svelte';
+	import { pageTitle } from '$lib/stores/pageTitle';
 
 	const API_URL = import.meta.env.VITE_API_URL;
 
@@ -20,7 +21,7 @@
 	let certsYearData = { labels: [], datasets: [] };
 	let studentsMajorData = { labels: [], datasets: [] };
 	let certsStatusData = { labels: [], datasets: [] };
-
+	pageTitle.set('Hệ thống quản lý văn bằng');
 	// ===== Fetch thống kê chung =====
 	async function fetchStats() {
 		try {

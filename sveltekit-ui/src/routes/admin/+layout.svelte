@@ -1,7 +1,7 @@
 <script>
-	import Header from '$lib/components/admin/header.svelte';
-	import Footer from '$lib/components/admin/footer.svelte';
-	import Sidebar from '$lib/components/admin/sidebar.svelte';
+	import Header from '../../layout/admin/header.svelte';
+	import Footer from '../../layout/admin/footer.svelte';
+	import Sidebar from '../../layout/admin/sidebar.svelte';
 	import { pageTitle } from '$lib/stores/pageTitle';
 	import { derived } from 'svelte/store';
 	import { onMount } from 'svelte';

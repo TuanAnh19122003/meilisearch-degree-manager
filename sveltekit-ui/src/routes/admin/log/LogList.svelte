@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { createEventDispatcher, onMount } from 'svelte';
 	import { MoreVertical } from 'lucide-svelte';
-	import ActionMenu from '$lib/ActionMenu.svelte';
-	import Pagination from '$lib/Pagination.svelte';
+	import ActionMenu from '$lib/components/ActionMenu.svelte';
+	import Pagination from '$lib/components/Pagination.svelte';
 
 	export let data: any[] = [];
 	export let pagination = { current: 1, pageSize: 6, total: 0 };

@@ -5,7 +5,7 @@
 	export let open = false;
 	export let position = { top: 0, left: 0 };
 	export let item: any = null;
-	export let showPrint = false; // thêm prop để bật/tắt in
+	export let showPrint = false;
 
 	const dispatch = createEventDispatcher();
 
