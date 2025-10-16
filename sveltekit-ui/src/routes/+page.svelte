@@ -109,7 +109,24 @@
 			style="opacity: {$loading ? 0.3 : 1}; transition: opacity 0.3s;"
 		>
 			{#if $loading}
-				<!-- Loading skeletons như trước -->
+				<div class="w-full space-y-4">
+					{#each Array(3) as _, i}
+						<div class="rounded border border-gray-200 bg-white p-4 shadow-sm">
+							<div class="mb-3 flex items-center gap-3">
+								<div class="skeleton h-10 w-10 rounded-full"></div>
+								<div class="flex-1 space-y-2">
+									<div class="skeleton h-3 w-1/3 rounded"></div>
+									<div class="skeleton h-3 w-1/2 rounded"></div>
+								</div>
+							</div>
+							<div class="space-y-2">
+								<div class="skeleton h-3 w-5/6 rounded"></div>
+								<div class="skeleton h-3 w-2/3 rounded"></div>
+								<div class="skeleton h-3 w-4/5 rounded"></div>
+							</div>
+						</div>
+					{/each}
+				</div>
 			{:else if $students.length || $certificates.length}
 				<!-- Dữ liệu sinh viên -->
 				{#if $students.length}
@@ -398,3 +415,25 @@
 		</div>
 	</div>
 </div>
+
+<style>
+	@keyframes shimmer {
+		0% {
+			background-position: -200% 0;
+		}
+		100% {
+			background-position: 200% 0;
+		}
+	}
+
+	.skeleton {
+		background: linear-gradient(
+			90deg,
+			rgba(240, 240, 240, 1) 25%,
+			rgba(230, 230, 230, 1) 50%,
+			rgba(240, 240, 240, 1) 75%
+		);
+		background-size: 200% 100%;
+		animation: shimmer 1.5s infinite;
+	}
+</style>
