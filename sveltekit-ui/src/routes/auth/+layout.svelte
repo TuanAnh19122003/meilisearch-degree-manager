@@ -1,6 +1,6 @@
 <script>
-	import Header from '$lib/components/auth/header.svelte';
-	import Footer from '$lib/components/auth/footer.svelte';
+	import Header from '../../layout/auth/header.svelte';
+	import Footer from '../../layout/admin/footer.svelte';
 	import { pageTitle } from '$lib/stores/pageTitle';
 	import { onMount } from 'svelte';
 	import { derived } from 'svelte/store';

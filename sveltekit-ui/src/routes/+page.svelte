@@ -92,7 +92,7 @@
 	}
 </script>
 
-<div class="flex min-h-[90vh] w-full items-center justify-center bg-gray-50">
+<div class="flex min-h-[100vh] w-full items-center justify-center">
 	<div
 		class="flex w-full max-w-5xl flex-col-reverse gap-6 rounded-xl
            border border-gray-200 bg-white p-6 shadow-2xl md:flex-row"
@@ -101,21 +101,40 @@
 		<div
 			class={`h-[70vh] flex-1 overflow-y-auto rounded p-4 transition-all
     		${$students.length || $certificates.length ? 'bg-white' : 'flex items-center justify-center bg-white'}`}
+			style="opacity: {$loading ? 0.3 : 1}; transition: opacity 0.3s;"
 		>
 			{#if $loading}
 				<!-- Loading -->
-				<div class="flex h-full flex-col items-center justify-center text-gray-400">
-					<svg
-						class="mb-3 h-8 w-8 animate-spin"
-						xmlns="http://www.w3.org/2000/svg"
-						fill="none"
-						viewBox="0 0 24 24"
-					>
-						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
-						></circle>
-						<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-					</svg>
-					<p>Đang tải dữ liệu...</p>
+				<div class="flex w-full min-w-0 flex-col gap-4">
+					<!-- Skeleton sinh viên full-width -->
+					{#each Array(3) as _, i}
+						<div
+							class="flex w-full min-w-0 animate-pulse items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+						>
+							<!-- Avatar -->
+							<div class="h-12 w-12 flex-shrink-0 rounded-full bg-gray-300"></div>
+
+							<!-- Text info full-width -->
+							<div class="flex min-w-0 flex-1 flex-col space-y-2">
+								<div class="h-4 w-full rounded-full bg-gray-300"></div>
+								<div class="h-3 w-full rounded-full bg-gray-200"></div>
+							</div>
+
+							<!-- Button chi tiết -->
+							<div class="h-4 w-20 flex-shrink-0 rounded-full bg-gray-200"></div>
+						</div>
+					{/each}
+
+					<!-- Skeleton văn bằng full-width -->
+					{#each Array(2) as _, i}
+						<div
+							class="flex w-full min-w-0 animate-pulse flex-col space-y-2 rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+						>
+							<div class="h-4 w-full rounded-full bg-gray-300"></div>
+							<div class="h-3 w-full rounded-full bg-gray-200"></div>
+							<div class="h-3 w-full rounded-full bg-gray-200"></div>
+						</div>
+					{/each}
 				</div>
 			{:else if $students.length || $certificates.length}
 				<!-- Dữ liệu sau khi load -->

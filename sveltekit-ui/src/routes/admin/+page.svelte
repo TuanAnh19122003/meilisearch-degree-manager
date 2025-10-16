@@ -3,7 +3,7 @@
 	import axios from 'axios';
 	import { FileText, Users, FileCheck } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
-	import Chart from '$lib/Chart.svelte';
+	import Chart from '$lib/components/Chart.svelte';
 	import { pageTitle } from '$lib/stores/pageTitle';
 
 	const API_URL = import.meta.env.VITE_API_URL;
