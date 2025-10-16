@@ -9,7 +9,7 @@
 	import { Plus, Book } from 'lucide-svelte';
 
 	let courses: any[] = [];
-	let pagination = { current: 1, pageSize: 6, total: 0 };
+	let pagination = { current: 1, pageSize: 9, total: 0 };
 	let search = '';
 	let credit: string = ''; // lọc tín chỉ
 	let openForm = false;

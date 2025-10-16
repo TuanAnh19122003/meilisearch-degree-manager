@@ -9,7 +9,7 @@
 	import { Plus } from 'lucide-svelte';
 
 	let users: any[] = [];
-	let pagination = { current: 1, pageSize: 6, total: 0 };
+	let pagination = { current: 1, pageSize: 9, total: 0 };
 	let search = '';
 	let openForm = false;
 	let editingUser: any = null;

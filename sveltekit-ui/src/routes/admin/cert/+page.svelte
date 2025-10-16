@@ -9,7 +9,7 @@
 	import { Plus } from 'lucide-svelte';
 
 	let certificates: any[] = [];
-	let pagination = { current: 1, pageSize: 6, total: 0 };
+	let pagination = { current: 1, pageSize: 9, total: 0 };
 	let search = '';
 	let searchStatus = '';
 	let openForm = false;

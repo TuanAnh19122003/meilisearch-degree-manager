@@ -109,7 +109,7 @@
 										{#if s.image}
 											<img
 												src={`http://localhost:5000/${s.image}`}
-												alt={`Ảnh của ${s.firstname} ${s.lastname}`}
+												alt={`Ảnh của ${s.lastname} ${s.firstname}`}
 												class="h-10 w-10 rounded-full object-cover"
 											/>
 										{:else}
@@ -120,7 +120,7 @@
 											</div>
 										{/if}
 										<div>
-											<p class="font-medium">{s.firstname} {s.lastname}</p>
+											<p class="font-medium">{s.lastname} {s.firstname}</p>
 											<p class="text-sm text-gray-500">{s.code}</p>
 										</div>
 									</div>
@@ -183,7 +183,7 @@
 										<p class="font-medium">{c.number}</p>
 										<p class="text-sm text-gray-500">{c.type} - {c.status}</p>
 										<p class="text-sm text-gray-500">
-											{c.student?.firstname}{c.student?.lastname} ({c.student?.code})
+											{c.student?.lastname} {c.student?.firstname} ({c.student?.code})
 										</p>
 									</div>
 

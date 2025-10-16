@@ -9,7 +9,7 @@
 	import axios from 'axios';
 
 	let roles: any[] = [];
-	let pagination = { current: 1, pageSize: 6, total: 0 };
+	let pagination = { current: 1, pageSize: 9, total: 0 };
 	let viewMode: 'list' | 'card' = 'list';
 	let search = '';
 	let openForm = false;

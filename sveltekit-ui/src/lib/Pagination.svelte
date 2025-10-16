@@ -5,7 +5,7 @@
 	export let current: number = 1;
 	export let pageSize: number = 10;
 	export let total: number = 0;
-	export let pageSizes: number[] = [6, 12, 24, 48];
+	export let pageSizes: number[] = [9, 18, 27, 45];
 
 	const dispatch = createEventDispatcher();
 

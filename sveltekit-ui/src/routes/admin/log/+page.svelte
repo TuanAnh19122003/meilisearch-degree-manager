@@ -7,7 +7,7 @@
 	import LogList from './LogList.svelte';
 
 	let logs: any[] = [];
-	let pagination = { current: 1, pageSize: 6, total: 0 };
+	let pagination = { current: 1, pageSize: 9, total: 0 };
 	let search = '';
 	let loading = false;
 	let viewMode: 'list' | 'card' = 'list';
