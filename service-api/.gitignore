@@ -1,2 +1,28 @@
+# Node.js dependencies
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
 .env
+.env.local
+.env.*.local
+
+# Docker
+docker-compose.override.yml
+*.dockerfile
+*.tar
+*.log
+
+# Optional: build output
+dist/
+build/
+
+# IDE/editor files
+.vscode/
+.idea/
+.DS_Store
+
+# Misc
+coverage/
