@@ -1,9 +1,41 @@
+
+version: '3.8'
 services:
   app:
+    container_name: degree-manager-api
     build: .
     ports:
       - "5000:5000"
     env_file:
       - .env
     restart: on-failure
+    depends_on:
+      - db
+      - meilisearch
+
+  db:
+    image: postgres:15
+    container_name: degree-manager-db
+    environment:
+      POSTGRES_DB: datn
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    container_name: degree-manager-meili
+    environment:
+      MEILI_MASTER_KEY: masterKey123
+    ports:
+      - "7701:7700"
+    volumes:
+      - meili_data:/meili_data
+
+volumes:
+  db_data:
+  meili_data:
 
