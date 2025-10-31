@@ -1,9 +1,9 @@
 
 version: '3.8'
 services:
-  app:
+  backend-nodejs:
+    image: tank1912/degree-manager-backend:1.1
     container_name: degree-manager-api
-    build: .
     ports:
       - "5000:5000"
     env_file:
@@ -14,7 +14,7 @@ services:
       - meilisearch
 
   db:
-    image: postgres:15
+    image: postgres:17
     container_name: degree-manager-db
     environment:
       POSTGRES_DB: datn
@@ -24,6 +24,7 @@ services:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
+      - ./backups:/backups
 
   meilisearch:
     image: getmeili/meilisearch:latest

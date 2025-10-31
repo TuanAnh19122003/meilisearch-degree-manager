@@ -39,7 +39,7 @@ async function syncTable(model, index, fields, extraMapper = null) {
         return doc;
     }));
 
-    await index.addDocuments(documents);
+    await index.addDocuments(documents, { primaryKey: 'id' });
     console.log(`Đã đồng bộ ${documents.length} bản ghi của ${model.name} lên Meilisearch`);
 }
 

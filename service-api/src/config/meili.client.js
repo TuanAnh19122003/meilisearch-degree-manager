@@ -14,6 +14,16 @@ const departmentIndex = client.index('departments');
 const majorIndex = client.index('majors');
 
 (async () => {
+    // Tạo indexes với primary key nếu chưa tồn tại
+    await client.createIndex('users', { primaryKey: 'id' }).catch(() => {});
+    await client.createIndex('roles', { primaryKey: 'id' }).catch(() => {});
+    await client.createIndex('students', { primaryKey: 'id' }).catch(() => {});
+    await client.createIndex('certificates', { primaryKey: 'id' }).catch(() => {});
+    await client.createIndex('courses', { primaryKey: 'id' }).catch(() => {});
+    await client.createIndex('departments', { primaryKey: 'id' }).catch(() => {});
+    await client.createIndex('majors', { primaryKey: 'id' }).catch(() => {});
+
+
     // User
     await userIndex.updateSearchableAttributes(['firstname', 'lastname', 'email', 'phone', 'role.name']);
     await userIndex.updateDisplayedAttributes(['id', 'firstname', 'lastname', 'email', 'phone', 'is_active', 'role', 'image']);
