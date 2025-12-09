@@ -17,6 +17,7 @@
 	let previewHTML = '';
 	let showPreview = false;
 	let previewCert: any = null;
+	let isGenerating = false;
 
 	function toggleMenu(item, event) {
 		if (openMenuId === item.id) return closeMenu();
@@ -128,25 +129,35 @@
 	}
 
 	async function confirmExportPDF() {
-		const res = await fetch('http://localhost:5000/api/certificate-print/generate', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${localStorage.getItem('token') || ''}`
-			},
-			body: JSON.stringify({
-				cert_id: previewCert.cert_id,
-				html: previewHTML
-			})
-		});
+		isGenerating = true;
 
-		const json = await res.json();
-		if (!json.success) {
-			alert(json.message);
-			return;
+		try {
+			const res = await fetch('http://localhost:5000/api/certificate-print/generate', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${localStorage.getItem('token') || ''}`
+				},
+				body: JSON.stringify({
+					cert_id: previewCert.cert_id,
+					html: previewHTML
+				})
+			});
+
+			const json = await res.json();
+			if (!json.success) {
+				alert(json.message);
+				isGenerating = false;
+				return;
+			}
+
+			alert('Xuất PDF thành công!');
+		} catch (err) {
+			alert('Lỗi khi xuất PDF!');
+			console.error(err);
+		} finally {
+			isGenerating = false;
 		}
-
-		alert('Xuất PDF thành công!');
 	}
 
 	function statusClass(status: string) {
@@ -297,6 +308,16 @@
 		</div>
 	</div>
 {/if}
+
+{#if isGenerating}
+	<div class="absolute inset-0 flex items-center justify-center bg-white/70 backdrop-blur-sm z-50">
+		<div class="flex flex-col items-center gap-3">
+			<div class="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600"></div>
+			<p class="text-gray-700 font-medium">Đang xuất PDF, vui lòng chờ...</p>
+		</div>
+	</div>
+{/if}
+
 
 <!-- Dropdown menu -->
 <ActionMenu
