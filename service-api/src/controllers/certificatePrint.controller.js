@@ -4,6 +4,9 @@ const fs = require('fs');
 const puppeteer = require('puppeteer');
 const generateMulterStyleFilename = require('../utils/fileNaming');
 
+require('dotenv').config({ path: '.env.local' });
+
+
 class CertificatePrintController {
     async findAll(req, res) {
         try {
@@ -67,14 +70,15 @@ class CertificatePrintController {
             if (!cert_id || !html)
                 return res.status(400).json({ success: false, message: "Thiếu cert_id hoặc html" });
 
-            const uploadDir = path.join(process.cwd(), 'src', 'uploads');
+            const uploadDir = path.join(__dirname, '..', 'uploads');
             if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
             const browser = await puppeteer.launch({
                 headless: true,
-                executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium',
+                executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
                 args: ['--no-sandbox', '--disable-setuid-sandbox']
             });
+
 
             const page = await browser.newPage();
 
