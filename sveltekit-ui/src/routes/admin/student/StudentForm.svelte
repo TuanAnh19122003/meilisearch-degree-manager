@@ -70,77 +70,87 @@
 	}
 </script>
 
-<form
-	class="w-[420px] space-y-4 rounded-lg bg-white p-6 shadow-lg"
-	on:submit|preventDefault={handleSubmit}
->
-	<div>
-		<label for="" class="mb-1 block font-medium">Mã sinh viên</label>
-		<input
-			type="text"
-			bind:value={formData.code}
-			class="w-full rounded-lg border px-3 py-2"
-			required
-		/>
+<!-- Modal backdrop -->
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+	<!-- Scrollable container -->
+	<!-- svelte-ignore a11y_label_has_associated_control -->
+	<div class="max-h-[90vh] w-full max-w-md overflow-auto rounded-lg bg-white p-6 shadow-lg">
+		<form class="space-y-4" on:submit|preventDefault={handleSubmit}>
+			<!-- Các input như trước -->
+			<div>
+				<label class="mb-1 block font-medium">Mã sinh viên</label>
+				<input
+					type="text"
+					bind:value={formData.code}
+					class="w-full rounded-lg border px-3 py-2"
+					required
+				/>
 
-		<label for="" class="mb-1 block font-medium">Họ</label>
-		<input
-			type="text"
-			bind:value={formData.lastname}
-			class="w-full rounded-lg border px-3 py-2"
-			required
-		/>
+				<label class="mb-1 block font-medium">Họ</label>
+				<input
+					type="text"
+					bind:value={formData.lastname}
+					class="w-full rounded-lg border px-3 py-2"
+					required
+				/>
 
-		<label for="" class="mb-1 block font-medium">Tên</label>
-		<input
-			type="text"
-			bind:value={formData.firstname}
-			class="w-full rounded-lg border px-3 py-2"
-			required
-		/>
+				<label class="mb-1 block font-medium">Tên</label>
+				<input
+					type="text"
+					bind:value={formData.firstname}
+					class="w-full rounded-lg border px-3 py-2"
+					required
+				/>
 
-		<label for="" class="mb-1 block font-medium">Email</label>
-		<input type="email" bind:value={formData.email} class="w-full rounded-lg border px-3 py-2" />
+				<label class="mb-1 block font-medium">Email</label>
+				<input
+					type="email"
+					bind:value={formData.email}
+					class="w-full rounded-lg border px-3 py-2"
+				/>
 
-		<label for="" class="mb-1 block font-medium">Phone</label>
-		<input type="text" bind:value={formData.phone} class="w-full rounded-lg border px-3 py-2" />
+				<label class="mb-1 block font-medium">Phone</label>
+				<input type="text" bind:value={formData.phone} class="w-full rounded-lg border px-3 py-2" />
 
-		<label for="" class="mb-1 block font-medium">Ngày sinh</label>
-		<input type="date" bind:value={formData.dob} class="w-full rounded-lg border px-3 py-2" />
+				<label class="mb-1 block font-medium">Ngày sinh</label>
+				<input type="date" bind:value={formData.dob} class="w-full rounded-lg border px-3 py-2" />
 
-		<label for="" class="mb-1 block font-medium">Địa chỉ</label>
-		<textarea bind:value={formData.address} class="w-full rounded-lg border px-3 py-2"></textarea>
+				<label class="mb-1 block font-medium">Địa chỉ</label>
+				<textarea bind:value={formData.address} class="w-full rounded-lg border px-3 py-2"
+				></textarea>
 
-		<label for="" class="mb-1 block font-medium">Chuyên ngành</label>
-		<select bind:value={formData.majorId} class="w-full rounded-lg border px-3 py-2" required>
-			<option value="" disabled>-- Chọn chuyên ngành --</option>
-			{#each majors as m}
-				<option value={m.id}>{m.name}</option>
-			{/each}
-		</select>
+				<label class="mb-1 block font-medium">Chuyên ngành</label>
+				<select bind:value={formData.majorId} class="w-full rounded-lg border px-3 py-2" required>
+					<option value="" disabled>-- Chọn chuyên ngành --</option>
+					{#each majors as m}
+						<option value={m.id}>{m.name}</option>
+					{/each}
+				</select>
 
-		<label for="" class="mb-1 block font-medium">Ảnh đại diện</label>
-		<input
-			type="file"
-			accept="image/*"
-			on:change={handleFileChange}
-			class="w-full rounded-lg border px-3 py-2"
-		/>
-		{#if previewUrl}
-			<img src={previewUrl} alt="Preview" class="mt-2 h-24 w-24 rounded-full object-cover" />
-		{/if}
+				<label class="mb-1 block font-medium">Ảnh đại diện</label>
+				<input
+					type="file"
+					accept="image/*"
+					on:change={handleFileChange}
+					class="w-full rounded-lg border px-3 py-2"
+				/>
+				{#if previewUrl}
+					<img src={previewUrl} alt="Preview" class="mt-2 h-24 w-24 rounded-full object-cover" />
+				{/if}
+			</div>
+
+			<div class="mt-4 flex justify-end gap-3">
+				<button
+					type="button"
+					class="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300"
+					on:click={handleCancel}
+				>
+					Hủy
+				</button>
+				<button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
+					Lưu
+				</button>
+			</div>
+		</form>
 	</div>
-
-	<div class="mt-4 flex justify-end gap-3">
-		<button
-			type="button"
-			class="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300"
-			on:click={handleCancel}
-		>
-			Hủy
-		</button>
-		<button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
-			Lưu
-		</button>
-	</div>
-</form>
+</div>

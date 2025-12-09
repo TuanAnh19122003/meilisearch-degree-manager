@@ -149,16 +149,17 @@
 								class="rounded border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md"
 							>
 								<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+									<!-- Ảnh và thông tin chính -->
 									<div class="flex items-center gap-3">
 										{#if s.image}
 											<img
 												src={`http://localhost:5000/${s.image}`}
 												alt={`${s.lastname} ${s.firstname}`}
-												class="h-10 w-10 rounded-full object-cover"
+												class="h-24 w-18 rounded-md border border-gray-300 object-cover"
 											/>
 										{:else}
 											<div
-												class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 font-bold text-white"
+												class="flex h-24 w-18 items-center justify-center rounded-md bg-blue-500 text-lg font-bold text-white"
 											>
 												{getInitials(s)}
 											</div>
@@ -166,8 +167,11 @@
 										<div>
 											<p class="font-medium">{s.lastname} {s.firstname}</p>
 											<p class="text-sm text-gray-500">{s.code}</p>
+											<p class="text-sm text-gray-500">SĐT: {s.phone || '-'}</p>
+											<p class="text-sm text-gray-500">Chuyên ngành: {s.major?.name || '-'}</p>
 										</div>
 									</div>
+
 									<button
 										class="flex items-center gap-1 text-sm text-blue-600 transition hover:text-blue-800 sm:mt-0"
 										on:click={() => toggleStudent(s.id)}
@@ -190,6 +194,7 @@
 									</button>
 								</div>
 
+								<!-- Chi tiết khi mở -->
 								{#if openStudent.includes(s.id)}
 									<div
 										transition:slide
@@ -197,11 +202,6 @@
 									>
 										<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
 											<p><span class="font-medium text-gray-600">Email:</span> {s.email || '-'}</p>
-											<p><span class="font-medium text-gray-600">SĐT:</span> {s.phone || '-'}</p>
-											<p>
-												<span class="font-medium text-gray-600">Chuyên ngành:</span>
-												{s.major?.name || '-'}
-											</p>
 											<p><span class="font-medium text-gray-600">GPA:</span> {s.gpa || '-'}</p>
 											<p>
 												<span class="font-medium text-gray-600">Học lực:</span>
@@ -428,29 +428,31 @@
 	</div>
 </div>
 {#if showPreview}
-<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-xl shadow-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+		<div
+			class="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-xl"
+		>
+			<div class="flex items-center justify-between border-b px-4 py-3">
+				<h2 class="text-lg font-semibold">Xem file PDF</h2>
+				<button class="text-gray-500 hover:text-black" on:click={() => (showPreview = false)}>
+					✕
+				</button>
+			</div>
 
-        <div class="flex justify-between items-center px-4 py-3 border-b">
-            <h2 class="text-lg font-semibold">Xem file PDF</h2>
-            <button class="text-gray-500 hover:text-black" on:click={() => showPreview = false}>
-                ✕
-            </button>
-        </div>
+			<!-- svelte-ignore a11y_missing_attribute -->
+			<iframe src={previewUrl} class="w-full flex-1" style="min-height:80vh;"></iframe>
 
-        <!-- svelte-ignore a11y_missing_attribute -->
-        <iframe src={previewUrl} class="flex-1 w-full" style="min-height:80vh;"></iframe>
-
-        <div class="p-4 flex justify-end bg-gray-50">
-            <button class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400" 
-                on:click={() => showPreview = false}>
-                Đóng
-            </button>
-        </div>
-    </div>
-</div>
+			<div class="flex justify-end bg-gray-50 p-4">
+				<button
+					class="rounded bg-gray-300 px-4 py-2 hover:bg-gray-400"
+					on:click={() => (showPreview = false)}
+				>
+					Đóng
+				</button>
+			</div>
+		</div>
+	</div>
 {/if}
-
 
 <style>
 	@keyframes shimmer {
