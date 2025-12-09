@@ -7,7 +7,10 @@ WORKDIR /usr/src/app
 # Cài các dependencies cần thiết cho Chromium
 RUN apt-get update && apt-get install -y \
     chromium \
-    chromium-driver \
+    fonts-noto \
+    fonts-noto-cjk \
+    fonts-noto-color-emoji \
+    fonts-dejavu \
     fonts-liberation \
     libnss3 \
     libatk-bridge2.0-0 \
@@ -25,6 +28,7 @@ RUN apt-get update && apt-get install -y \
     libxshmfence1 \
     curl \
     && rm -rf /var/lib/apt/lists/*
+
 
 # Copy package.json + package-lock.json
 COPY package*.json ./
