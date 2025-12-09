@@ -2,7 +2,7 @@
 version: '3.8'
 services:
   backend-nodejs:
-    image: tank1912/degree-manager-backend:1.1
+    image: tank1912/degree-manager-backend:1.4
     container_name: degree-manager-api
     ports:
       - "5000:5000"
@@ -12,6 +12,8 @@ services:
     depends_on:
       - db
       - meilisearch
+    volumes:
+      - ./uploads:/usr/src/app/src/uploads
 
   db:
     image: postgres:17
