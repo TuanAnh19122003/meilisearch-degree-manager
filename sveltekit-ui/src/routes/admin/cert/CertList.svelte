@@ -128,60 +128,25 @@
 	}
 
 	async function confirmExportPDF() {
-		showPreview = false;
-
-		// tạo container ẩn
-		const container = document.createElement('div');
-		container.style.width = '297mm';
-		container.style.minHeight = '210mm';
-		container.style.position = 'fixed';
-		container.style.top = '-9999px';
-		container.innerHTML = previewHTML;
-		document.body.appendChild(container);
-
-		const opt = {
-			margin: 0,
-			filename: `${previewCert.number}.pdf`,
-			image: { type: 'jpeg', quality: 1 },
-			html2canvas: { scale: 2 },
-			jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-		};
-
-		const pdfBlob: Blob = await new Promise((resolve) => {
-			html2pdf()
-				.from(container)
-				.set(opt)
-				.toPdf()
-				.output('blob')
-				.then((blob: Blob) => resolve(blob));
+		const res = await fetch('http://localhost:5000/api/certificate-print/generate', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${localStorage.getItem('token') || ''}`
+			},
+			body: JSON.stringify({
+				cert_id: previewCert.cert_id,
+				html: previewHTML
+			})
 		});
 
-		document.body.removeChild(container);
-
-		// Upload
-		const form = new FormData();
-		form.append('file', pdfBlob, `${previewCert.number}.pdf`);
-
-		const uploadRes = await fetch(
-			`http://localhost:5000/api/certificate-print/upload/${previewCert.cert_id}`,
-			{
-				method: 'POST',
-				headers: {
-					Authorization: `Bearer ${localStorage.getItem('token') || ''}`
-				},
-				body: form
-			}
-		);
-
-		const uploadJson = await uploadRes.json();
-
-		if (!uploadJson.success) {
-			alert('Lỗi khi upload file:\n' + (uploadJson.message || uploadJson.error));
+		const json = await res.json();
+		if (!json.success) {
+			alert(json.message);
 			return;
 		}
 
-		alert('Lưu file văn bằng thành công!');
-		dispatch('fileUploaded', uploadJson.data);
+		alert('Xuất PDF thành công!');
 	}
 
 	function statusClass(status: string) {

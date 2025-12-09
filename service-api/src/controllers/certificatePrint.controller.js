@@ -1,4 +1,8 @@
 const CertificatePrintService = require('../services/certificatePrint.service');
+const path = require('path');
+const fs = require('fs');
+const puppeteer = require('puppeteer');
+const generateMulterStyleFilename = require('../utils/fileNaming');
 
 class CertificatePrintController {
     async findAll(req, res) {
@@ -51,6 +55,58 @@ class CertificatePrintController {
             res.status(500).json({
                 success: false,
                 message: 'Lỗi khi lưu file văn bằng',
+                error: error.message
+            });
+        }
+    }
+
+    async generatePDF(req, res) {
+        try {
+            const { cert_id, html } = req.body;
+
+            if (!cert_id || !html)
+                return res.status(400).json({ success: false, message: "Thiếu cert_id hoặc html" });
+
+            const uploadDir = path.join(process.cwd(), 'src', 'uploads');
+            if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+            const browser = await puppeteer.launch({
+                headless: true,
+                args: ['--no-sandbox', '--disable-setuid-sandbox']
+            });
+            const page = await browser.newPage();
+
+            await page.setContent(html, { waitUntil: 'networkidle0' });
+
+            const pdfBuffer = await page.pdf({
+                format: 'A4',
+                landscape: true,
+                printBackground: true
+            });
+
+            await browser.close();
+
+            // --- DÙNG TÊN FILE GIỐNG MULTER ---
+            const filename = generateMulterStyleFilename(`cert-${cert_id}`, '.pdf');
+            const filepath = path.join(uploadDir, filename);
+
+            fs.writeFileSync(filepath, pdfBuffer);
+
+            const fileUrl = `uploads/${filename}`;
+
+            const updated = await CertificatePrintService.saveFile(cert_id, fileUrl);
+
+            return res.json({
+                success: true,
+                message: "Tạo PDF thành công",
+                data: updated
+            });
+
+        } catch (error) {
+            console.error("PDF Error:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Lỗi khi generate PDF",
                 error: error.message
             });
         }

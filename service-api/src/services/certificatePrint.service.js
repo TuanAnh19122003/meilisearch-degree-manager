@@ -26,10 +26,17 @@ class CertificatePrintService {
     static async saveFile(certificateId, fileUrl) {
         const cert = await Certificate.findByPk(certificateId);
         if (!cert) throw new Error("Certificate not found");
+
         cert.file_url = fileUrl;
         await cert.save();
+
+        // SYNC vào Meilisearch
+        const { syncCertificate } = require('./meiliSync.service');
+        syncCertificate(certificateId).catch(console.error);
+
         return cert;
     }
+
 }
 
 module.exports = CertificatePrintService;

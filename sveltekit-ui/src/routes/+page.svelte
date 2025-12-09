@@ -14,6 +14,9 @@
 	const API_URL = import.meta.env.VITE_API_URL;
 	const user = writable(null);
 	let showUserMenu = false;
+	let showPreview = false;
+	let previewUrl = '';
+
 	pageTitle.set('Tra cứu văn bằng');
 	function toggleUserMenu() {
 		showUserMenu = !showUserMenu;
@@ -23,6 +26,15 @@
 		localStorage.removeItem('user');
 		user.set(null);
 		showUserMenu = false;
+	}
+
+	function openPreview(c) {
+		if (!c.file_url) {
+			alert('Văn bằng chưa có file PDF!');
+			return;
+		}
+		previewUrl = `http://localhost:5000/${c.file_url}`;
+		showPreview = true;
 	}
 
 	onMount(() => {
@@ -260,12 +272,12 @@
 											<p>
 												<span class="font-medium text-gray-600">File văn bằng:</span>
 												{#if c.file_url}
-													<a
-														href={c.file_url}
-														class="ml-1 text-blue-600 underline transition hover:text-blue-800"
-														target="_blank"
-														rel="noopener noreferrer">Xem file</a
+													<button
+														class="ml-1 text-blue-600 underline hover:text-blue-800"
+														on:click={() => openPreview(c)}
 													>
+														Xem file
+													</button>
 												{:else}
 													<span class="ml-1 text-gray-400">Chưa có</span>
 												{/if}
@@ -415,6 +427,30 @@
 		</div>
 	</div>
 </div>
+{#if showPreview}
+<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+
+        <div class="flex justify-between items-center px-4 py-3 border-b">
+            <h2 class="text-lg font-semibold">Xem file PDF</h2>
+            <button class="text-gray-500 hover:text-black" on:click={() => showPreview = false}>
+                ✕
+            </button>
+        </div>
+
+        <!-- svelte-ignore a11y_missing_attribute -->
+        <iframe src={previewUrl} class="flex-1 w-full" style="min-height:80vh;"></iframe>
+
+        <div class="p-4 flex justify-end bg-gray-50">
+            <button class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400" 
+                on:click={() => showPreview = false}>
+                Đóng
+            </button>
+        </div>
+    </div>
+</div>
+{/if}
+
 
 <style>
 	@keyframes shimmer {

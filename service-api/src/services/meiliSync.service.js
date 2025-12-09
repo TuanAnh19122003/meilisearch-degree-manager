@@ -101,4 +101,41 @@ async function syncAll() {
     }
 }
 
-module.exports = { syncAll };
+async function syncCertificate(certId) {
+    const item = await Certificate.findByPk(certId, {
+        include: [
+            {
+                model: Student,
+                as: 'student',
+                attributes: ['id', 'code', 'firstname', 'lastname']
+            }
+        ],
+        raw: false
+    });
+
+    if (!item) return;
+
+    const doc = {
+        id: item.id,
+        studentId: item.studentId,
+        number: item.number,
+        type: item.type,
+        grad_date: item.grad_date,
+        issuer: item.issuer,
+        status: item.status,
+        file_url: item.file_url,
+        student: item.student
+            ? {
+                id: item.student.id,
+                code: item.student.code,
+                firstname: item.student.firstname,
+                lastname: item.student.lastname
+            }
+            : null
+    };
+
+    await certificateIndex.addDocuments([doc]);
+    console.log("Đã cập nhật certificate vào Meilisearch:", certId);
+}
+
+module.exports = { syncAll, syncCertificate };
