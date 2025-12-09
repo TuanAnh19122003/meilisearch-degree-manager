@@ -2,6 +2,8 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user.model');
 const Role = require('../models/role.model');
 
+require('dotenv').config({ path: '.env.local' });
+
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
 async function authMiddleware(req, res, next) {

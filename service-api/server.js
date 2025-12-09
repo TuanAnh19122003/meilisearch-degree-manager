@@ -4,7 +4,7 @@ const path = require('path');
 const morgan = require('morgan');
 const cors = require('cors');
 
-require('dotenv').config();
+require('dotenv').config({ path: '.env.local' });
 
 const port = process.env.PORT || 5001;
 const db = require('./src/models/index');
