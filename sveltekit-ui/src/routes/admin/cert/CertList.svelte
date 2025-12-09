@@ -13,6 +13,10 @@
 	let openMenuId: string | null = null;
 	let menuPos = { top: 0, left: 0 };
 	let currentItem: any = null;
+	let html2pdf: any = null;
+	let previewHTML = '';
+	let showPreview = false;
+	let previewCert: any = null;
 
 	function toggleMenu(item, event) {
 		if (openMenuId === item.id) return closeMenu();
@@ -30,6 +34,10 @@
 	function handleClickOutside(event) {
 		if (openMenuId && !(event.target as HTMLElement).closest('.dropdown-trigger')) closeMenu();
 	}
+	onMount(async () => {
+		const module = await import('html2pdf.js');
+		html2pdf = module.default;
+	});
 
 	onMount(() => {
 		document.addEventListener('click', handleClickOutside);
@@ -49,64 +57,133 @@
 		closeMenu();
 	}
 
-	async function handlePrint(item) {
-		const resApi = await fetch(`http://localhost:5000/api/certificate-print/${item.id}`, {
-			headers: {
-				Authorization: `Bearer ${localStorage.getItem('token') || ''}`
+	async function handlePrint(item: any) {
+		if (!html2pdf) {
+			const module = await import('html2pdf.js');
+			html2pdf = module.default;
+		}
+
+		try {
+			// 1. Lấy certificate
+			const resApi = await fetch(`http://localhost:5000/api/certificate-print/${item.id}`, {
+				headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` }
+			});
+
+			const apiData = await resApi.json();
+			if (!apiData.success) {
+				alert('Không lấy được dữ liệu in văn bằng');
+				return;
 			}
+
+			const cert = apiData.data;
+
+			// 2. Load template + logo
+			const url = `/templates/${cert.type.toLowerCase()}.html`;
+			const res = await fetch(url);
+			let template = await res.text();
+
+			const logoBlob = await (await fetch('/templates/logo.png')).blob();
+			const logoBase64 = await new Promise((resolve) => {
+				const reader = new FileReader();
+				reader.onloadend = () => resolve(reader.result);
+				reader.readAsDataURL(logoBlob);
+			});
+
+			// mapping
+			function translateClassification(hocLuc: string) {
+				switch (hocLuc) {
+					case 'Xuất sắc':
+						return 'Distinction';
+					case 'Giỏi':
+						return 'Excellent';
+					case 'Khá':
+						return 'Good';
+					case 'Trung bình':
+						return 'Average';
+					default:
+						return '';
+				}
+			}
+
+			// 3. Build HTML
+			const html = template
+				.replace(/<%= logoBase64 %>/g, String(logoBase64))
+				.replace(/<%= fullname %>/g, `${cert.lastname} ${cert.firstname}`)
+				.replace(/<%= dob %>/g, new Date(cert.dob).toLocaleDateString('vi-VN'))
+				.replace(/<%= gradYear %>/g, new Date(cert.grad_date).getFullYear().toString())
+				.replace(/<%= classification %>/g, cert.hoc_luc || '')
+				.replace(/<%= classificationEn %>/g, translateClassification(cert.hoc_luc))
+				.replace(/<%= number %>/g, cert.number);
+
+			// 4. Gán vào preview
+			previewHTML = html;
+			previewCert = cert;
+			showPreview = true;
+
+			closeMenu();
+		} catch (err: any) {
+			console.error(err);
+			alert('Có lỗi xảy ra khi tạo preview văn bằng:\n' + err.message);
+		}
+	}
+
+	async function confirmExportPDF() {
+		showPreview = false;
+
+		// tạo container ẩn
+		const container = document.createElement('div');
+		container.style.width = '297mm';
+		container.style.minHeight = '210mm';
+		container.style.position = 'fixed';
+		container.style.top = '-9999px';
+		container.innerHTML = previewHTML;
+		document.body.appendChild(container);
+
+		const opt = {
+			margin: 0,
+			filename: `${previewCert.number}.pdf`,
+			image: { type: 'jpeg', quality: 1 },
+			html2canvas: { scale: 2 },
+			jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+		};
+
+		const pdfBlob: Blob = await new Promise((resolve) => {
+			html2pdf()
+				.from(container)
+				.set(opt)
+				.toPdf()
+				.output('blob')
+				.then((blob: Blob) => resolve(blob));
 		});
-		const apiData = await resApi.json();
-		if (!apiData.success) {
-			alert('Không lấy được dữ liệu in văn bằng');
+
+		document.body.removeChild(container);
+
+		// Upload
+		const form = new FormData();
+		form.append('file', pdfBlob, `${previewCert.number}.pdf`);
+
+		const uploadRes = await fetch(
+			`http://localhost:5000/api/certificate-print/upload/${previewCert.cert_id}`,
+			{
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${localStorage.getItem('token') || ''}`
+				},
+				body: form
+			}
+		);
+
+		const uploadJson = await uploadRes.json();
+
+		if (!uploadJson.success) {
+			alert('Lỗi khi upload file:\n' + (uploadJson.message || uploadJson.error));
 			return;
 		}
-		const cert = apiData.data;
 
-		// mapping học lực
-		function translateClassification(hocLuc: string) {
-			switch (hocLuc) {
-				case 'Xuất sắc':
-					return 'Distinction';
-				case 'Giỏi':
-					return 'Excellent';
-				case 'Khá':
-					return 'Good';
-				case 'Trung bình':
-					return 'Average';
-				default:
-					return '';
-			}
-		}
-
-		const url = `/templates/${cert.type.toLowerCase()}.html`;
-		const res = await fetch(url);
-		let template = await res.text();
-		const logoRes = await fetch('/templates/logo.png');
-		const logoBlob = await logoRes.blob();
-		const logoBase64 = await new Promise((resolve) => {
-			const reader = new FileReader();
-			reader.onloadend = () => resolve(reader.result);
-			reader.readAsDataURL(logoBlob);
-		});
-
-		const html = template
-			.replace(/<%= logoBase64 %>/g, String(logoBase64))
-			.replace(/<%= fullname %>/g, `${cert.lastname} ${cert.firstname}`)
-			.replace(/<%= dob %>/g, new Date(cert.dob).toLocaleDateString('vi-VN'))
-			.replace(/<%= gradYear %>/g, new Date(cert.grad_date).getFullYear().toString())
-			.replace(/<%= classification %>/g, cert.hoc_luc || '')
-			.replace(/<%= classificationEn %>/g, translateClassification(cert.hoc_luc))
-			.replace(/<%= number %>/g, cert.number);
-
-		const win = window.open('', '_blank');
-		win.document.write(html);
-		win.document.close();
-		win.focus();
-		win.print();
-
-		closeMenu();
+		alert('Lưu file văn bằng thành công!');
+		dispatch('fileUploaded', uploadJson.data);
 	}
-	
+
 	function statusClass(status: string) {
 		switch (status) {
 			case 'issued':
@@ -216,6 +293,43 @@
 				</div>
 			</div>
 		{/each}
+	</div>
+{/if}
+
+{#if showPreview}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+		<div
+			class="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-xl"
+		>
+			<div class="flex items-center justify-between border-b px-4 py-3">
+				<h2 class="text-lg font-semibold">Xem trước văn bằng</h2>
+				<button class="text-gray-500 hover:text-black" on:click={() => (showPreview = false)}>
+					✕
+				</button>
+			</div>
+
+			<div class="flex-1 overflow-auto border-b bg-gray-100 p-4">
+				<div class="mx-auto bg-white p-4 shadow" style="width: 297mm; min-height: 210mm;">
+					{@html previewHTML}
+				</div>
+			</div>
+
+			<div class="flex justify-end gap-3 bg-gray-50 p-4">
+				<button
+					class="rounded bg-gray-300 px-4 py-2 hover:bg-gray-400"
+					on:click={() => (showPreview = false)}
+				>
+					Hủy
+				</button>
+
+				<button
+					class="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+					on:click={confirmExportPDF}
+				>
+					Xuất PDF
+				</button>
+			</div>
+		</div>
 	</div>
 {/if}
 

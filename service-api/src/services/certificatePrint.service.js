@@ -1,4 +1,5 @@
 const { QueryTypes } = require('sequelize');
+const Certificate = require('../models/certificate.model');
 const sequelize = require('../config/database');
 
 class CertificatePrintService {
@@ -20,6 +21,14 @@ class CertificatePrintService {
 
         if (data.length === 0) throw new Error("Không tìm thấy văn bằng cho sinh viên này");
         return data[0];
+    }
+
+    static async saveFile(certificateId, fileUrl) {
+        const cert = await Certificate.findByPk(certificateId);
+        if (!cert) throw new Error("Certificate not found");
+        cert.file_url = fileUrl;
+        await cert.save();
+        return cert;
     }
 }
 

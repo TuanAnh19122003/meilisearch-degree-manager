@@ -34,6 +34,27 @@ class CertificatePrintController {
             });
         }
     }
+
+    async uploadFile(req, res) {
+        try {
+            if (!req.file) return res.status(400).json({ success: false, message: "Chưa có file upload" });
+
+            const fileUrl = `uploads/${req.file.filename}`;
+            const updated = await CertificatePrintService.saveFile(req.params.certificateId, fileUrl);
+
+            res.status(200).json({
+                success: true,
+                message: 'Lưu file văn bằng thành công',
+                data: updated
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                message: 'Lỗi khi lưu file văn bằng',
+                error: error.message
+            });
+        }
+    }
 }
 
 module.exports = new CertificatePrintController();

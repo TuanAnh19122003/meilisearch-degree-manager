@@ -27,19 +27,17 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-    if (allowedTypes.includes(file.mimetype)) {
-        cb(null, true);
-    } else {
-        cb(new Error('Only JPEG/PNG/JPG files are allowed'), false);
-    }
+    // cho phép pdf + hình (FE upload PDF)
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+    if (allowedTypes.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Only PDF/JPEG/PNG/JPG files are allowed'), false);
 };
 
 const upload = multer({
     storage,
     fileFilter,
     limits: {
-        fileSize: 5 * 1024 * 1024
+        fileSize: 10 * 1024 * 1024
     }
 });
 
