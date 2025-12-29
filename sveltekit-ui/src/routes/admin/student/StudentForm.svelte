@@ -3,7 +3,7 @@
 	import { toast } from 'svelte-sonner';
 	import axios from 'axios';
 
-	export let initialValues = {
+	export let initialValues: any = {
 		code: '',
 		firstname: '',
 		lastname: '',
@@ -12,13 +12,33 @@
 		dob: '',
 		address: '',
 		majorId: '',
-		image: null // giữ file ảnh
+		major: null,
+		image: null
 	};
 
 	const dispatch = createEventDispatcher();
-	let formData = { ...initialValues };
+	let formData = {
+		...initialValues,
+		majorId: initialValues?.majorId ? String(initialValues.majorId) : ''
+	};
+
 	let previewUrl = formData.image ? URL.createObjectURL(formData.image) : '';
 	let majors: any[] = [];
+
+	$: computedMajors = (() => {
+		if (!formData.majorId) return majors;
+
+		const exists = majors.some((m) => String(m.id) === String(formData.majorId));
+
+		if (exists) return majors;
+
+		// ⭐ thêm major của sinh viên đang sửa
+		if (initialValues?.major) {
+			return [initialValues.major, ...majors];
+		}
+
+		return majors;
+	})();
 
 	const API_URL = import.meta.env.VITE_API_URL;
 	let token = '';
@@ -122,8 +142,10 @@
 				<label class="mb-1 block font-medium">Chuyên ngành</label>
 				<select bind:value={formData.majorId} class="w-full rounded-lg border px-3 py-2" required>
 					<option value="" disabled>-- Chọn chuyên ngành --</option>
-					{#each majors as m}
-						<option value={m.id}>{m.name}</option>
+					{#each computedMajors as m}
+						<option value={String(m.id)}>
+							{m.name}
+						</option>
 					{/each}
 				</select>
 

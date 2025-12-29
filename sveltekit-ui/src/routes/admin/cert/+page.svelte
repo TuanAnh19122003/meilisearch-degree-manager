@@ -82,7 +82,7 @@
 				if (search) {
 					const exactResults = await certIndex.search('', {
 						filter: `number = "${search}" OR student.code = "${search}"`,
-						limit: 2 
+						limit: 2
 					});
 
 					if (exactResults.hits.length === 1) {
@@ -127,10 +127,18 @@
 		editingCert = null;
 		openForm = true;
 	}
+	function normalizeCert(cert: any) {
+		return {
+			...cert,
+			studentId: cert.studentId ?? cert.student?.id ?? cert.student_id ?? ''
+		};
+	}
+
 	function handleEdit(cert: any) {
-		editingCert = cert;
+		editingCert = normalizeCert(cert);
 		openForm = true;
 	}
+
 	function handleView(cert: any) {
 		viewingCert = cert;
 	}
