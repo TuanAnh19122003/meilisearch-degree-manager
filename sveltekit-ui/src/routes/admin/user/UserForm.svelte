@@ -32,7 +32,7 @@
 			formData = {
 				...formData,
 				...initialValues,
-				password: '' // không load mật khẩu cũ
+				password: '' // Luôn để trống khi load form edit để an toàn
 			};
 		}
 	});
@@ -47,13 +47,27 @@
 	function handleSubmit(e) {
 		e.preventDefault();
 
+		// 1. Kiểm tra các thông tin cơ bản
 		if (!formData.firstname || !formData.lastname || !formData.email || !formData.roleId) {
 			toast.error('Vui lòng nhập đầy đủ thông tin!');
 			return;
 		}
 
+		// 2. Logic Mật khẩu quan trọng:
+		// Nếu là tạo mới (!initialValues) thì BẮT BUỘC có mật khẩu
+		if (!initialValues && !formData.password) {
+			toast.error('Vui lòng nhập mật khẩu cho tài khoản mới!');
+			return;
+		}
+
 		const payload = new FormData();
 		for (const key in formData) {
+			// 3. Xử lý gửi mật khẩu:
+			// Nếu đang Edit và ô mật khẩu trống -> Bỏ qua không gửi (để giữ pass cũ)
+			if (key === 'password' && initialValues && !formData.password) {
+				continue;
+			}
+
 			if (formData[key] !== null && formData[key] !== undefined && formData[key] !== '') {
 				payload.append(key, formData[key]);
 			}
@@ -70,38 +84,62 @@
 <form class="space-y-4" on:submit|preventDefault={handleSubmit}>
 	<div class="grid grid-cols-2 gap-4">
 		<div>
-			<label for="" class="mb-1 block text-sm">Họ</label>
-			<input type="text" bind:value={formData.firstname} class="w-full rounded border px-3 py-2" />
-		</div>
-		<div>
-			<label for="" class="mb-1 block text-sm">Tên</label>
-			<input type="text" bind:value={formData.lastname} class="w-full rounded border px-3 py-2" />
-		</div>
-	</div>
-
-	<div>
-		<label for="" class="mb-1 block text-sm">Email</label>
-		<input type="email" bind:value={formData.email} class="w-full rounded border px-3 py-2" />
-	</div>
-
-	{#if !initialValues}
-		<div>
-			<label for="" class="mb-1 block text-sm">Mật khẩu</label>
+			<label for="" class="mb-1 block text-sm font-medium">Họ</label>
 			<input
-				type="password"
-				bind:value={formData.password}
+				type="text"
+				bind:value={formData.firstname}
 				class="w-full rounded border px-3 py-2"
+				placeholder="VD: Trịnh"
 			/>
 		</div>
-	{/if}
-
-	<div>
-		<label for="" class="mb-1 block text-sm">Số điện thoại</label>
-		<input type="text" bind:value={formData.phone} class="w-full rounded border px-3 py-2" />
+		<div>
+			<label for="" class="mb-1 block text-sm font-medium">Tên</label>
+			<input
+				type="text"
+				bind:value={formData.lastname}
+				class="w-full rounded border px-3 py-2"
+				placeholder="VD: Tuấn Anh"
+			/>
+		</div>
 	</div>
 
 	<div>
-		<label for="" class="mb-1 block text-sm">Vai trò</label>
+		<label for="" class="mb-1 block text-sm font-medium">Email</label>
+		<input
+			type="email"
+			bind:value={formData.email}
+			class="w-full rounded border px-3 py-2"
+			placeholder="example@epu.edu.vn"
+		/>
+	</div>
+
+	<div>
+		<label for="" class="mb-1 block text-sm font-medium">
+			Mật khẩu
+			{#if initialValues}
+				<span class="text-xs font-normal text-gray-500">(Để trống nếu không muốn đổi)</span>
+			{/if}
+		</label>
+		<input
+			type="password"
+			bind:value={formData.password}
+			class="w-full rounded border px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+			placeholder={initialValues ? '••••••••' : 'Nhập mật khẩu mới'}
+		/>
+	</div>
+
+	<div>
+		<label for="" class="mb-1 block text-sm font-medium">Số điện thoại</label>
+		<input
+			type="text"
+			bind:value={formData.phone}
+			class="w-full rounded border px-3 py-2"
+			placeholder="034..."
+		/>
+	</div>
+
+	<div>
+		<label for="" class="mb-1 block text-sm font-medium">Vai trò</label>
 		<select bind:value={formData.roleId} class="w-full rounded border px-3 py-2">
 			<option value="">-- Chọn vai trò --</option>
 			{#each roles as role}
@@ -111,24 +149,40 @@
 	</div>
 
 	<div class="flex items-center gap-2">
-		<input type="checkbox" bind:checked={formData.is_active} />
-		<label for="">Hoạt động</label>
+		<input type="checkbox" id="active" bind:checked={formData.is_active} class="h-4 w-4" />
+		<label for="active" class="text-sm">Tài khoản đang hoạt động</label>
 	</div>
 
-	<div>
-		<label for="" class="mb-1 block text-sm">Ảnh</label>
-		<input type="file" accept="image/*" on:change={handleFileChange} />
-		{#if initialValues?.image}
-			<img
-				src={`http://localhost:5000/${initialValues.image}`}
-				alt="preview"
-				class="mt-2 h-16 w-16 rounded-full object-cover"
-			/>
+	<div class="rounded-lg border border-dashed border-gray-300 p-4">
+		<label for="" class="mb-2 block text-sm font-medium">Ảnh đại diện</label>
+		<input type="file" accept="image/*" on:change={handleFileChange} class="text-sm" />
+
+		{#if formData.image && typeof formData.image !== 'string'}
+			<p class="mt-2 text-center text-xs font-medium text-blue-600 italic">
+				Đã chọn ảnh mới: {formData.image.name}
+			</p>
+		{:else if initialValues?.image}
+			<div class="mt-2 flex items-center gap-3">
+				<img
+					src={`http://localhost:5000/${initialValues.image}`}
+					alt="current"
+					class="h-12 w-12 rounded-full border object-cover"
+				/>
+				<span class="text-xs text-gray-400 italic">Ảnh hiện tại</span>
+			</div>
 		{/if}
 	</div>
 
-	<div class="flex justify-end gap-3">
-		<button type="button" class="rounded bg-gray-200 px-4 py-2" on:click={handleCancel}>Hủy</button>
-		<button type="submit" class="rounded bg-blue-600 px-4 py-2 text-white">Lưu</button>
+	<div class="flex justify-end gap-3 pt-4">
+		<button
+			type="button"
+			class="rounded bg-gray-100 px-6 py-2 font-medium text-gray-600 hover:bg-gray-200"
+			on:click={handleCancel}>Hủy</button
+		>
+		<button
+			type="submit"
+			class="rounded bg-blue-600 px-6 py-2 font-medium text-white hover:bg-blue-700"
+			>Lưu thông tin</button
+		>
 	</div>
 </form>

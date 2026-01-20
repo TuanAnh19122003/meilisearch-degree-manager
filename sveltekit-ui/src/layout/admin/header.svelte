@@ -20,7 +20,7 @@
 		showToast.set(true);
 		setTimeout(() => {
 			showToast.set(false);
-			goto('http://localhost:5173');
+			goto('http://tank.epu.edu.vn');
 		}, 2000);
 	}
 
@@ -73,7 +73,7 @@
 					Cài đặt
 				</button>
 				<a
-					href="http://localhost:5173"
+					href="http://tank.epu.edu.vn"
 					class="flex w-full px-4 py-3 text-left font-medium text-blue-600 hover:bg-gray-100"
 				>
 					Trang người dùng

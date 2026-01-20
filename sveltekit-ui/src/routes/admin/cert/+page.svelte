@@ -23,7 +23,6 @@
 	let certIndex: any = null;
 
 	pageTitle.set('Quản lý văn bằng');
-
 	onMount(async () => {
 		token = localStorage.getItem('token') || '';
 		if (!token) return (window.location.href = '/auth/login');
@@ -290,9 +289,13 @@
 					{#if viewingCert.file_url}
 						<p>
 							<b>File:</b>
-							<a href={viewingCert.file_url} target="_blank" class="text-blue-600 underline"
-								>Xem / tải về</a
+							<a
+								href="http://localhost:5000/{viewingCert.file_url}"
+								target="_blank"
+								class="font-medium text-blue-600 underline hover:text-blue-800"
 							>
+								Xem / tải về văn bằng
+							</a>
 						</p>
 					{/if}
 				</div>

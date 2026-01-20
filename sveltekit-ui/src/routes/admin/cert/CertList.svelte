@@ -255,7 +255,7 @@
 					{item.status === 'issued' ? 'Đã cấp' : item.status === 'revoked' ? 'Thu hồi' : 'Bản nháp'}
 				</span>
 				{#if item.file_url}
-					<a href={item.file_url} target="_blank" class="text-xs text-blue-600 underline"
+					<a href={`http://localhost:5000/${item.file_url}`} target="_blank" class="text-xs text-blue-600 underline"
 						>Xem file</a
 					>
 				{/if}

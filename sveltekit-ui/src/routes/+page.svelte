@@ -336,7 +336,6 @@
 
 			<div class="relative mt-2 flex flex-col gap-2">
 				{#if $user && !$students.length && !$certificates.length}
-					<!-- User menu -->
 					<div transition:fade={{ duration: 200 }}>
 						<button
 							type="button"
@@ -370,12 +369,14 @@
 								class="absolute right-0 z-10 mt-1 w-48 rounded border border-gray-200 bg-white shadow-lg"
 								transition:fade={{ duration: 200 }}
 							>
-								<a
-									href="http://localhost:5173/admin"
-									class="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-								>
-									Trang người dùng
-								</a>
+								{#if $user.role?.code === 'admin'}
+									<a
+										href="http://tank.epu.edu.vn/admin"
+										class="block border-b border-gray-100 px-4 py-2 font-bold text-blue-600 hover:bg-blue-50"
+									>
+										Quản trị hệ thống
+									</a>
+								{/if}
 								<button
 									type="button"
 									class="w-full px-4 py-2 text-left text-red-500 hover:bg-gray-100"
